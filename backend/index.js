@@ -1,11 +1,11 @@
 require('dotenv').config();
 const express = require('express');
-const session = require('express-session');
 const passport = require('passport');
 const morgan = require('morgan');
 const cookieParser = require('cookie-parser');
 const cors = require('cors');
 const path = require('path');
+const jwt = require('jsonwebtoken');
 const setupPassport = require('./auth');
 const missionsRouter = require('./missions');
 
@@ -28,36 +28,32 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 
-// Configurar sesiones ANTES de Passport
-app.use(session({
-  secret: process.env.SESSION_SECRET || 'supersecreto',
-  resave: true,
-  saveUninitialized: true,
-  cookie: {
-    secure: true, // Para HTTPS
-    httpOnly: true,
-    sameSite: 'lax', // Para el mismo dominio
-    maxAge: 24 * 60 * 60 * 1000 // 24 horas
-  },
-  store: new (require('express-session').MemoryStore)() // Usar MemoryStore temporalmente
-}));
-
-// Inicializar Passport DESPUÉS de las sesiones
+// Inicializar Passport sin sesiones
 app.use(passport.initialize());
-app.use(passport.session());
+
+// Middleware para verificar JWT
+const authenticateJWT = (req, res, next) => {
+  const token = req.cookies.jwt || req.headers.authorization?.split(' ')[1];
+  
+  if (!token) {
+    return res.status(401).json({ error: 'No token provided' });
+  }
+
+  try {
+    const decoded = jwt.verify(token, process.env.SESSION_SECRET || 'supersecreto');
+    req.user = decoded;
+    next();
+  } catch (error) {
+    return res.status(401).json({ error: 'Invalid token' });
+  }
+};
 
 // API Routes
-app.use('/api/missions', missionsRouter);
+app.use('/api/missions', authenticateJWT, missionsRouter);
 
-app.get('/api/user', (req, res) => {
-  console.log('👤 Consultando usuario, autenticado:', req.isAuthenticated());
-  if (req.isAuthenticated()) {
-    console.log('✅ Usuario autenticado:', req.user.username);
-    res.json({ user: req.user });
-  } else {
-    console.log('❌ Usuario NO autenticado');
-    res.status(401).json({ user: null });
-  }
+app.get('/api/user', authenticateJWT, (req, res) => {
+  console.log('👤 Usuario autenticado con JWT:', req.user.username);
+  res.json({ user: req.user });
 });
 
 // Rutas de autenticación
@@ -72,22 +68,34 @@ app.get('/auth/twitter/callback',
     console.log('Query params:', req.query);
     next();
   },
-  passport.authenticate('twitter', { failureRedirect: '/' }),
+  passport.authenticate('twitter', { failureRedirect: '/', session: false }),
   (req, res) => {
     console.log('✅ Autenticación exitosa con Twitter');
     console.log('Usuario autenticado:', req.user);
     
-    // Redirigir a la página principal (mismo dominio)
+    // Generar JWT
+    const token = jwt.sign(
+      req.user, 
+      process.env.SESSION_SECRET || 'supersecreto',
+      { expiresIn: '24h' }
+    );
+    
+    // Redirigir al frontend con el token en cookie
+    res.cookie('jwt', token, {
+      httpOnly: true,
+      secure: true,
+      sameSite: 'lax',
+      maxAge: 24 * 60 * 60 * 1000 // 24 horas
+    });
+    
     res.redirect('/?fromTwitter=success');
   }
 );
 
 app.get('/auth/logout', (req, res) => {
   console.log('🚪 Usuario cerrando sesión');
-  req.logout(() => {
-    console.log('✅ Sesión cerrada, redirigiendo...');
-    res.redirect('/');
-  });
+  res.clearCookie('jwt');
+  res.redirect('/');
 });
 
 // Servir archivos estáticos del frontend

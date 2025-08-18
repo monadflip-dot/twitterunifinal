@@ -1,13 +1,6 @@
 const passport = require('passport');
 const TwitterStrategy = require('passport-twitter').Strategy;
-
-passport.serializeUser((user, done) => {
-  done(null, user);
-});
-
-passport.deserializeUser((obj, done) => {
-  done(null, obj);
-});
+const jwt = require('jsonwebtoken');
 
 function setupPassport() {
   passport.use(new TwitterStrategy({
@@ -15,7 +8,7 @@ function setupPassport() {
     consumerSecret: process.env.TWITTER_CONSUMER_SECRET,
     callbackURL: process.env.TWITTER_CALLBACK_URL,
     passReqToCallback: false,
-    session: true
+    session: false // Deshabilitar sesiones, usar JWT
   },
   (token, tokenSecret, profile, done) => {
     // Guardar los tokens en el usuario para usarlos luego
