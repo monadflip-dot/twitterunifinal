@@ -13,22 +13,32 @@ function App() {
 
   // Verificar si el usuario está autenticado al cargar la app
   useEffect(() => {
+    console.log('🚀 App cargando, verificando parámetros de URL...');
+    
     // Verificar si venimos del login exitoso de Twitter
     const urlParams = new URLSearchParams(window.location.search);
     const fromTwitter = urlParams.get('fromTwitter');
     
+    console.log('🔗 Parámetro fromTwitter:', fromTwitter);
+    console.log('📍 URL completa:', window.location.href);
+    
     if (fromTwitter === 'success') {
+      console.log('🎯 Login exitoso detectado, verificando autenticación...');
       // Limpiar la URL
       window.history.replaceState({}, document.title, window.location.pathname);
       // Verificar autenticación inmediatamente
       checkAuthStatus();
     } else {
+      console.log('🔍 Verificación normal de autenticación...');
       checkAuthStatus();
     }
   }, []);
 
   const checkAuthStatus = async () => {
     try {
+      console.log('🔍 Verificando estado de autenticación...');
+      console.log('🍪 Cookies disponibles:', document.cookie);
+      
       const res = await fetch(`${API_URL}/api/user`, { 
         credentials: 'include',
         headers: {
@@ -36,18 +46,21 @@ function App() {
         }
       });
       
+      console.log('📡 Respuesta de /api/user:', res.status, res.statusText);
+      
       if (res.status === 200) {
         const data = await res.json();
+        console.log('✅ Usuario autenticado:', data.user);
         if (data.user) {
           setUser(data.user);
           fetchMissions();
         }
       } else if (res.status === 401) {
-        // Usuario no autenticado, es normal
+        console.log('❌ Usuario NO autenticado (401)');
         setUser(null);
       }
     } catch (error) {
-      console.log('Usuario no autenticado');
+      console.error('💥 Error verificando autenticación:', error);
       setUser(null);
     } finally {
       setLoading(false);
