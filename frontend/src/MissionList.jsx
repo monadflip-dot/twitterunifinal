@@ -1,27 +1,26 @@
 import React from 'react';
 import MissionItem from './MissionItem';
 
-const MissionList = ({ missions, onMissionAction }) => {
+function MissionList({ missions, onMissionComplete }) {
   if (!missions || missions.length === 0) {
     return (
-      <div style={{ textAlign: 'center', padding: '40px', color: '#b0b0b0' }}>
-        <h3>No hay misiones disponibles</h3>
-        <p>Vuelve más tarde para nuevas misiones</p>
+      <div className="no-missions">
+        <p>No hay misiones disponibles en este momento.</p>
       </div>
     );
   }
 
   return (
-    <div className="missions-grid">
+    <div className="missions-list">
       {missions.map((mission) => (
-        <MissionItem 
-          key={mission.id} 
-          mission={mission} 
-          onAction={onMissionAction} 
+        <MissionItem
+          key={mission.id}
+          mission={mission}
+          onComplete={onMissionComplete}
         />
       ))}
     </div>
   );
-};
+}
 
 export default MissionList;

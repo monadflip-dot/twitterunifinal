@@ -1,94 +1,159 @@
 import React, { useState, useEffect } from 'react';
 import MissionList from './MissionList';
 
-// Usar rutas relativas ya que frontend y backend están en el mismo dominio
-const API_URL = '';
+const API_URL = process.env.REACT_APP_API_URL || 'https://twitterunifinal.onrender.com';
 
-const Dashboard = ({ user, missions, onMissionAction }) => {
-  const [totalPoints, setTotalPoints] = useState(0);
-  const [completedMissions, setCompletedMissions] = useState(0);
+function Dashboard({ user, onLogout }) {
+  const [missions, setMissions] = useState([]);
+  const [stats, setStats] = useState({
+    totalPoints: 0,
+    completedMissions: 0,
+    totalMissions: 0,
+    pendingMissions: 0
+  });
 
   useEffect(() => {
-    // Calcular puntos totales y misiones completadas
-    const completed = missions.filter(m => m.completed);
-    const points = completed.reduce((sum, m) => sum + (m.points || 0), 0);
-    setTotalPoints(points);
-    setCompletedMissions(completed.length);
-  }, [missions]);
+    fetchMissions();
+  }, []);
 
-  const handleLogout = () => {
-    window.location.href = `${API_URL}/auth/logout`;
+  const fetchMissions = async () => {
+    try {
+      const response = await fetch(`${API_URL}/api/missions`, {
+        credentials: 'include'
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        const missionsData = data.missions || [];
+        setMissions(missionsData);
+        
+        // Calcular estadísticas
+        const completed = missionsData.filter(m => m.completed).length;
+        setStats({
+          totalPoints: missionsData.filter(m => m.completed).reduce((sum, m) => sum + m.points, 0),
+          completedMissions: completed,
+          totalMissions: missionsData.length,
+          pendingMissions: missionsData.length - completed
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching missions:', error);
+    }
+  };
+
+  const handleMissionComplete = async (missionId) => {
+    try {
+      const response = await fetch(`${API_URL}/api/missions/${missionId}/complete`, {
+        method: 'POST',
+        credentials: 'include'
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success) {
+          // Actualizar misión como completada
+          setMissions(prev => 
+            prev.map(m => m.id === missionId ? { ...m, completed: true } : m)
+          );
+          
+          // Actualizar estadísticas
+          fetchMissions();
+          
+          // Mostrar mensaje de éxito
+          const mission = missions.find(m => m.id === missionId);
+          alert(`¡Misión completada! 🎉\n\nHas ganado ${mission?.points || 0} puntos!`);
+        } else {
+          alert('No se pudo verificar la misión. Asegúrate de haber realizado la acción en Twitter antes de hacer clic en "Completar".');
+        }
+      }
+    } catch (error) {
+      alert('Error al verificar la misión. Inténtalo de nuevo.');
+    }
   };
 
   return (
-    <div className="app-container">
-      {/* Sidebar izquierda */}
-      <div className="sidebar">
-        <div className="user-profile">
-          <img 
-            src={user.photo || user.avatar || 'https://via.placeholder.com/80x80/8B4513/ffffff?text=U'} 
-            alt="Profile" 
-            className="user-avatar"
-          />
-          <div className="user-name">{user.displayName || user.name || 'Usuario'}</div>
-          <div className="user-handle">@{user.username || 'username'}</div>
-        </div>
-
-        <div className="menu-section">
-          <div className="menu-title">MENU</div>
-          <div className="menu-item active">
-            🏠 Dashboard
+    <div className="dashboard-container">
+      <div className="dashboard-background">
+        <div className="dashboard-panel">
+          <div className="dashboard-header">
+            <h1>DASHBOARD DE MISIONES</h1>
+            <div className="header-separator"></div>
+            <p className="dashboard-subtitle">Completa misiones y gana puntos</p>
           </div>
-          <div className="menu-item">
-            🎯 Misiones
+          
+          <div className="user-section">
+            <div className="user-info">
+              <div className="user-avatar">
+                <img src={user?.profile_image_url || '/default-avatar.png'} alt="Avatar" />
+              </div>
+              <div className="user-details">
+                <h3>{user?.name || 'Usuario'}</h3>
+                <p>@{user?.username || 'username'}</p>
+              </div>
+            </div>
+            <button className="logout-button" onClick={onLogout}>
+              <i className="fas fa-sign-out-alt"></i>
+              Cerrar Sesión
+            </button>
           </div>
-          <div className="menu-item">
-            👤 Perfil
+          
+          <div className="stats-section">
+            <div className="stat-item">
+              <div className="stat-icon">
+                <i className="fas fa-star"></i>
+              </div>
+              <div className="stat-content">
+                <h4>{stats.totalPoints}</h4>
+                <p>PUNTOS TOTALES</p>
+              </div>
+            </div>
+            
+            <div className="stat-item">
+              <div className="stat-icon">
+                <i className="fas fa-check-circle"></i>
+              </div>
+              <div className="stat-content">
+                <h4>{stats.completedMissions}</h4>
+                <p>MISIONES COMPLETADAS</p>
+              </div>
+            </div>
+            
+            <div className="stat-item">
+              <div className="stat-icon">
+                <i className="fas fa-list"></i>
+              </div>
+              <div className="stat-content">
+                <h4>{stats.totalMissions}</h4>
+                <p>TOTAL DE MISIONES</p>
+              </div>
+            </div>
+            
+            <div className="stat-item">
+              <div className="stat-icon">
+                <i className="fas fa-clock"></i>
+              </div>
+              <div className="stat-content">
+                <h4>{stats.pendingMissions}</h4>
+                <p>MISIONES PENDIENTES</p>
+              </div>
+            </div>
           </div>
-        </div>
-
-        <button className="logout-button" onClick={handleLogout}>
-          🚪 Cerrar Sesión
-        </button>
-      </div>
-
-      {/* Contenido principal */}
-      <div className="main-content">
-        <div className="dashboard-header">
-          <h1 className="dashboard-title">Dashboard de Misiones</h1>
-          <p className="dashboard-subtitle">Completa misiones y gana puntos</p>
-        </div>
-
-        {/* Stats cards */}
-        <div className="stats-grid">
-          <div className="stat-card">
-            <div className="stat-value">{totalPoints}</div>
-            <div className="stat-label">Puntos Totales</div>
+          
+          <div className="missions-section">
+            <div className="section-header">
+              <h2>MISIONES DISPONIBLES</h2>
+              <div className="section-separator"></div>
+            </div>
+            
+            <MissionList 
+              missions={missions} 
+              onMissionComplete={handleMissionComplete}
+            />
           </div>
-          <div className="stat-card">
-            <div className="stat-value">{completedMissions}</div>
-            <div className="stat-label">Misiones Completadas</div>
-          </div>
-          <div className="stat-card">
-            <div className="stat-value">{missions?.length || 0}</div>
-            <div className="stat-label">Total de Misiones</div>
-          </div>
-          <div className="stat-card">
-            <div className="stat-value">{missions?.filter(m => !m.completed).length || 0}</div>
-            <div className="stat-label">Misiones Pendientes</div>
-          </div>
-        </div>
-
-        {/* Sección de misiones */}
-        <div className="missions-section">
-          <h2 className="section-title">
-            🎯 Misiones Disponibles
-          </h2>
-          <MissionList missions={missions} onMissionAction={onMissionAction} />
         </div>
       </div>
     </div>
   );
-};
+}
 
 export default Dashboard;

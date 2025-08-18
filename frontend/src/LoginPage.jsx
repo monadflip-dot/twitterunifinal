@@ -1,28 +1,57 @@
 import React from 'react';
 
-const LoginPage = ({ onLogin }) => (
-  <div style={{ width: '100%' }}>
-    <h1 style={{ textAlign: 'center', fontSize: 36, marginBottom: 16 }}>Bienvenido a Twitter Missions</h1>
-    <p style={{ textAlign: 'center', fontSize: 20, marginBottom: 40 }}>
-      Loguéate con Twitter para empezar a completar misiones como dar like, retuitear y comentar.
-    </p>
-    <div style={{ display: 'flex', justifyContent: 'center', marginTop: 32 }}>
-      <button
-        style={{
-          background: '#1da1f2',
-          color: 'white',
-          border: 'none',
-          borderRadius: 6,
-          padding: '16px 48px',
-          fontSize: 22,
-          cursor: 'pointer',
-        }}
-        onClick={onLogin}
-      >
-        Iniciar sesión con Twitter
-      </button>
+const API_URL = process.env.REACT_APP_API_URL || 'https://twitterunifinal.onrender.com';
+
+function LoginPage() {
+  const handleTwitterLogin = () => {
+    window.location.href = `${API_URL}/auth/twitter`;
+  };
+
+  return (
+    <div className="login-container">
+      <div className="login-background">
+        <div className="login-panel">
+          <div className="login-header">
+            <h1>TWITTER MISSIONS</h1>
+            <div className="header-separator"></div>
+          </div>
+          
+          <div className="login-content">
+            <div className="login-icon">
+              <div className="icon-circle">
+                <i className="fab fa-twitter"></i>
+              </div>
+            </div>
+            
+            <div className="login-text">
+              <h2>Completa Misiones</h2>
+              <p>Conecta tu cuenta de Twitter y completa misiones para ganar puntos. ¡Demuestra tu actividad en la red social!</p>
+            </div>
+            
+            <button className="login-button" onClick={handleTwitterLogin}>
+              <i className="fab fa-twitter"></i>
+              Conectar con Twitter
+            </button>
+            
+            <div className="login-features">
+              <div className="feature-item">
+                <i className="fas fa-heart"></i>
+                <span>Dar Likes</span>
+              </div>
+              <div className="feature-item">
+                <i className="fas fa-retweet"></i>
+                <span>Hacer Retweets</span>
+              </div>
+              <div className="feature-item">
+                <i className="fas fa-comment"></i>
+                <span>Comentar</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
-  </div>
-);
+  );
+}
 
 export default LoginPage;
