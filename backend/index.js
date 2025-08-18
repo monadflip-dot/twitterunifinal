@@ -28,7 +28,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 
-// Configurar sesiones para el mismo dominio
+// Configurar sesiones ANTES de Passport
 app.use(session({
   secret: process.env.SESSION_SECRET || 'supersecreto',
   resave: true,
@@ -42,6 +42,7 @@ app.use(session({
   store: new (require('express-session').MemoryStore)() // Usar MemoryStore temporalmente
 }));
 
+// Inicializar Passport DESPUÉS de las sesiones
 app.use(passport.initialize());
 app.use(passport.session());
 

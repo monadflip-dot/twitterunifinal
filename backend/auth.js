@@ -14,6 +14,8 @@ function setupPassport() {
     consumerKey: process.env.TWITTER_CONSUMER_KEY,
     consumerSecret: process.env.TWITTER_CONSUMER_SECRET,
     callbackURL: process.env.TWITTER_CALLBACK_URL,
+    passReqToCallback: false,
+    session: true
   },
   (token, tokenSecret, profile, done) => {
     // Guardar los tokens en el usuario para usarlos luego
