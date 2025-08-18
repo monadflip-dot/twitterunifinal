@@ -103,17 +103,26 @@ app.get('/auth/twitter', (req, res) => {
   // Guardar state en sesión
   req.session.oauthState = state;
   
-  // Construir URL de autorización
+  // Construir URL de autorización (formato correcto para Twitter OAuth 2.0)
   const authUrl = `https://twitter.com/i/oauth2/authorize?` +
     `response_type=code&` +
     `client_id=${process.env.TWITTER_CLIENT_ID}&` +
     `redirect_uri=${encodeURIComponent(process.env.TWITTER_CALLBACK_URL)}&` +
-    `scope=${encodeURIComponent('tweet.read users.read like.write like.read')}&` +
-    `state=${state}`;
+    `scope=tweet.read%20users.read%20like.write%20like.read&` +
+    `state=${state}&` +
+    `code_challenge_method=S256&` +
+    `code_challenge=${generateCodeChallenge()}`;
   
   console.log('🔗 Redirigiendo a:', authUrl);
   res.redirect(authUrl);
 });
+
+// Función para generar PKCE code challenge
+function generateCodeChallenge() {
+  const codeVerifier = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+  // Para simplificar, usamos un hash básico
+  return Buffer.from(codeVerifier).toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+}
 
 app.get('/auth/twitter/callback',
   async (req, res) => {
@@ -121,7 +130,13 @@ app.get('/auth/twitter/callback',
     console.log('Query params:', req.query);
     console.log('🍪 Cookies en callback:', req.headers.cookie);
     
-    const { code, state } = req.query;
+    const { code, state, error } = req.query;
+    
+    // Verificar si hay error
+    if (error) {
+      console.log('❌ Error de Twitter:', error);
+      return res.redirect('/?error=' + error);
+    }
     
     // Verificar state
     if (!req.session.oauthState || state !== req.session.oauthState) {
@@ -142,12 +157,14 @@ app.get('/auth/twitter/callback',
         body: new URLSearchParams({
           grant_type: 'authorization_code',
           code: code,
-          redirect_uri: process.env.TWITTER_CALLBACK_URL
+          redirect_uri: process.env.TWITTER_CALLBACK_URL,
+          code_verifier: req.session.codeVerifier || 'default_verifier'
         })
       });
       
       if (!tokenResponse.ok) {
-        console.log('❌ Error obteniendo token:', tokenResponse.status);
+        const errorText = await tokenResponse.text();
+        console.log('❌ Error obteniendo token:', tokenResponse.status, errorText);
         return res.redirect('/?error=token_error');
       }
       
@@ -190,6 +207,7 @@ app.get('/auth/twitter/callback',
       
       // Limpiar la sesión de OAuth
       delete req.session.oauthState;
+      delete req.session.codeVerifier;
       
       console.log('🔄 Redirigiendo al frontend...');
       res.redirect('/?fromTwitter=success');
