@@ -60,7 +60,7 @@ app.get('/api/user', authenticateJWT, (req, res) => {
 app.get('/auth/twitter', (req, res, next) => {
   console.log('🔐 Iniciando autenticación con Twitter...');
   next();
-}, passport.authenticate('twitter'));
+}, passport.authenticate('oauth2'));
 
 app.get('/auth/twitter/callback',
   (req, res, next) => {
@@ -68,7 +68,7 @@ app.get('/auth/twitter/callback',
     console.log('Query params:', req.query);
     next();
   },
-  passport.authenticate('twitter', { failureRedirect: '/', session: false }),
+  passport.authenticate('oauth2', { failureRedirect: '/', session: false }),
   (req, res) => {
     console.log('✅ Autenticación exitosa con Twitter');
     console.log('Usuario autenticado:', req.user);
