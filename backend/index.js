@@ -58,17 +58,29 @@ passport.deserializeUser((user, done) => {
 
 // Middleware para verificar JWT
 const authenticateJWT = (req, res, next) => {
+  console.log('🔐 Middleware JWT ejecutándose...');
+  console.log('🍪 Cookies recibidas:', req.headers.cookie);
+  
   const token = req.cookies.jwt || req.headers.authorization?.split(' ')[1];
   
+  console.log('🎫 Token encontrado:', token ? 'SÍ' : 'NO');
+  if (token) {
+    console.log('🎫 Token (primeros 50 chars):', token.substring(0, 50) + '...');
+  }
+  
   if (!token) {
+    console.log('❌ No hay token, devolviendo 401');
     return res.status(401).json({ error: 'No token provided' });
   }
 
   try {
+    console.log('🔍 Verificando JWT...');
     const decoded = jwt.verify(token, process.env.SESSION_SECRET || 'supersecreto');
+    console.log('✅ JWT válido, usuario:', decoded.username);
     req.user = decoded;
     next();
   } catch (error) {
+    console.log('❌ Error verificando JWT:', error.message);
     return res.status(401).json({ error: 'Invalid token' });
   }
 };
@@ -91,12 +103,14 @@ app.get('/auth/twitter/callback',
   (req, res, next) => {
     console.log('📱 Callback de Twitter recibido');
     console.log('Query params:', req.query);
+    console.log('🍪 Cookies en callback:', req.headers.cookie);
     next();
   },
   passport.authenticate('oauth2', { failureRedirect: '/', session: false }),
   (req, res) => {
     console.log('✅ Autenticación exitosa con Twitter');
-    console.log('Usuario autenticado:', req.user);
+    console.log('👤 Usuario autenticado:', req.user);
+    console.log('🔑 Generando JWT...');
     
     // Generar JWT
     const token = jwt.sign(
@@ -104,6 +118,9 @@ app.get('/auth/twitter/callback',
       process.env.SESSION_SECRET || 'supersecreto',
       { expiresIn: '24h' }
     );
+    
+    console.log('🎫 JWT generado:', token.substring(0, 50) + '...');
+    console.log('🍪 Configurando cookie JWT...');
     
     // Redirigir al frontend con el token en cookie
     res.cookie('jwt', token, {
@@ -113,9 +130,13 @@ app.get('/auth/twitter/callback',
       maxAge: 24 * 60 * 60 * 1000 // 24 horas
     });
     
+    console.log('🍪 Cookie JWT configurada');
+    console.log('🧹 Destruyendo sesión OAuth...');
+    
     // Limpiar la sesión de OAuth
     req.session.destroy();
     
+    console.log('🔄 Redirigiendo al frontend...');
     res.redirect('/?fromTwitter=success');
   }
 );
