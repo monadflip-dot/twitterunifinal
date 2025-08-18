@@ -93,6 +93,9 @@ app.get('/api/user', authenticateJWT, (req, res) => {
   res.json({ user: req.user });
 });
 
+// Almacenamiento temporal para OAuth (en lugar de sesiones)
+const oauthStates = new Map();
+
 // Rutas de autenticación
 app.get('/auth/twitter', (req, res) => {
   console.log('🔐 Iniciando autenticación con Twitter...');
@@ -100,8 +103,19 @@ app.get('/auth/twitter', (req, res) => {
   // Generar state aleatorio para seguridad
   const state = Math.random().toString(36).substring(2, 15);
   
-  // Guardar state en sesión
-  req.session.oauthState = state;
+  // Guardar state en memoria temporal
+  oauthStates.set(state, {
+    timestamp: Date.now(),
+    codeVerifier: Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15)
+  });
+  
+  // Limpiar states antiguos (más de 10 minutos)
+  const tenMinutesAgo = Date.now() - 10 * 60 * 1000;
+  for (const [key, value] of oauthStates.entries()) {
+    if (value.timestamp < tenMinutesAgo) {
+      oauthStates.delete(key);
+    }
+  }
   
   // Construir URL de autorización (formato correcto para Twitter OAuth 2.0)
   const authUrl = `https://twitter.com/i/oauth2/authorize?` +
@@ -111,16 +125,16 @@ app.get('/auth/twitter', (req, res) => {
     `scope=tweet.read%20users.read%20like.write%20like.read&` +
     `state=${state}&` +
     `code_challenge_method=S256&` +
-    `code_challenge=${generateCodeChallenge()}`;
+    `code_challenge=${generateCodeChallenge(oauthStates.get(state).codeVerifier)}`;
   
   console.log('🔗 Redirigiendo a:', authUrl);
+  console.log('🔑 State guardado:', state);
   res.redirect(authUrl);
 });
 
 // Función para generar PKCE code challenge
-function generateCodeChallenge() {
-  const codeVerifier = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
-  // Para simplificar, usamos un hash básico
+function generateCodeChallenge(codeVerifier) {
+  // Para simplificar, usamos un hash básico del code verifier
   return Buffer.from(codeVerifier).toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
 }
 
@@ -139,11 +153,14 @@ app.get('/auth/twitter/callback',
     }
     
     // Verificar state
-    if (!req.session.oauthState || state !== req.session.oauthState) {
-      console.log('❌ State inválido');
+    if (!oauthStates.has(state)) {
+      console.log('❌ State inválido o expirado');
       return res.redirect('/?error=invalid_state');
     }
-    
+
+    const stateData = oauthStates.get(state);
+    const codeVerifier = stateData.codeVerifier;
+
     try {
       console.log('🔄 Intercambiando código por token...');
       
@@ -158,7 +175,7 @@ app.get('/auth/twitter/callback',
           grant_type: 'authorization_code',
           code: code,
           redirect_uri: process.env.TWITTER_CALLBACK_URL,
-          code_verifier: req.session.codeVerifier || 'default_verifier'
+          code_verifier: codeVerifier
         })
       });
       
@@ -206,8 +223,7 @@ app.get('/auth/twitter/callback',
       console.log('🧹 Limpiando sesión OAuth...');
       
       // Limpiar la sesión de OAuth
-      delete req.session.oauthState;
-      delete req.session.codeVerifier;
+      oauthStates.delete(state);
       
       console.log('🔄 Redirigiendo al frontend...');
       res.redirect('/?fromTwitter=success');
