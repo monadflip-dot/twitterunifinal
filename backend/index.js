@@ -203,17 +203,52 @@ app.get('/auth/twitter/callback',
       const tokenData = await tokenResponse.json();
       console.log('✅ Token obtenido:', tokenData.access_token ? 'SÍ' : 'NO');
       
-      // Crear usuario básico
-      const user = {
-        id: 'twitter_user_' + Date.now(),
-        username: 'twitter_user',
-        displayName: 'Twitter User',
-        photo: null,
-        accessToken: tokenData.access_token,
-        refreshToken: tokenData.refresh_token
-      };
+      try {
+        console.log('👤 Obteniendo información del usuario de Twitter...');
+        
+        // Obtener información del usuario usando la API de Twitter
+        const userResponse = await fetch('https://api.twitter.com/2/users/me?user.fields=id,username,name,profile_image_url', {
+          headers: {
+            'Authorization': `Bearer ${tokenData.access_token}`
+          }
+        });
+        
+        if (!userResponse.ok) {
+          console.log('⚠️ No se pudo obtener información del usuario, usando datos básicos');
+          throw new Error('User info not available');
+        }
+        
+        const userData = await userResponse.json();
+        console.log('👤 Datos del usuario obtenidos:', userData);
+        
+        // Crear usuario con información real de Twitter
+        const user = {
+          id: userData.data.id,
+          username: userData.data.username,
+          displayName: userData.data.name,
+          photo: userData.data.profile_image_url,
+          accessToken: tokenData.access_token,
+          refreshToken: tokenData.refresh_token
+        };
+        
+        console.log('👤 Usuario creado con datos reales:', user.username, user.displayName);
+        
+      } catch (error) {
+        console.log('⚠️ Error obteniendo información del usuario, usando datos básicos:', error.message);
+        
+        // Fallback: crear usuario básico
+        const user = {
+          id: 'twitter_user_' + Date.now(),
+          username: 'twitter_user',
+          displayName: 'Twitter User',
+          photo: null,
+          accessToken: tokenData.access_token,
+          refreshToken: tokenData.refresh_token
+        };
+        
+        console.log('👤 Usuario básico creado:', user.username);
+      }
       
-      console.log('👤 Usuario creado:', user.username);
       console.log('🔑 Generando JWT...');
       
       // Generar JWT
