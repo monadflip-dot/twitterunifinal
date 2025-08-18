@@ -2,9 +2,9 @@ const express = require('express');
 const { TwitterApi } = require('twitter-api-v2');
 const router = express.Router();
 
-// Middleware para proteger rutas
+// Middleware para proteger rutas (usando JWT en lugar de sesiones)
 function ensureAuthenticated(req, res, next) {
-  if (req.isAuthenticated()) {
+  if (req.user) {
     return next();
   }
   res.status(401).json({ error: 'No autenticado' });
@@ -46,19 +46,16 @@ router.get('/', ensureAuthenticated, (req, res) => {
   res.json({ missions: exampleMissions });
 });
 
-// Completar misión (verificación real)
+// Completar misión (verificación real con OAuth 2.0)
 router.post('/:id/complete', ensureAuthenticated, async (req, res) => {
   const missionId = parseInt(req.params.id, 10);
   const mission = exampleMissions.find(m => m.id === missionId);
   if (!mission) return res.status(404).json({ error: 'Misión no encontrada' });
 
-  const { token, tokenSecret, id: userId } = req.user;
-  const client = new TwitterApi({
-    appKey: process.env.TWITTER_CONSUMER_KEY,
-    appSecret: process.env.TWITTER_CONSUMER_SECRET,
-    accessToken: token,
-    accessSecret: tokenSecret,
-  });
+  const { accessToken, id: userId } = req.user;
+  
+  // Usar OAuth 2.0 con access token
+  const client = new TwitterApi(accessToken);
 
   try {
     if (mission.type === 'like') {
@@ -81,7 +78,7 @@ router.post('/:id/complete', ensureAuthenticated, async (req, res) => {
     }
     return res.status(400).json({ error: 'Tipo de misión no soportado' });
   } catch (err) {
-    console.error(err);
+    console.error('Error verificando misión:', err);
     return res.status(500).json({ error: 'Error verificando la acción en Twitter' });
   }
 });
