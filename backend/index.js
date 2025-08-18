@@ -203,6 +203,8 @@ app.get('/auth/twitter/callback',
       const tokenData = await tokenResponse.json();
       console.log('✅ Token obtenido:', tokenData.access_token ? 'SÍ' : 'NO');
       
+      let user; // Declarar user fuera del try-catch
+      
       try {
         console.log('👤 Obteniendo información del usuario de Twitter...');
         
@@ -222,7 +224,7 @@ app.get('/auth/twitter/callback',
         console.log('👤 Datos del usuario obtenidos:', userData);
         
         // Crear usuario con información real de Twitter
-        const user = {
+        user = {
           id: userData.data.id,
           username: userData.data.username,
           displayName: userData.data.name,
@@ -237,7 +239,7 @@ app.get('/auth/twitter/callback',
         console.log('⚠️ Error obteniendo información del usuario, usando datos básicos:', error.message);
         
         // Fallback: crear usuario básico
-        const user = {
+        user = {
           id: 'twitter_user_' + Date.now(),
           username: 'twitter_user',
           displayName: 'Twitter User',
