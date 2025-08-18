@@ -10,8 +10,8 @@ function setupPassport() {
     clientSecret: process.env.TWITTER_CLIENT_SECRET,
     callbackURL: process.env.TWITTER_CALLBACK_URL,
     scope: ['tweet.read', 'users.read', 'like.write', 'like.read'],
-    state: true,
-    pkce: true
+    state: false, // Deshabilitar state
+    pkce: false   // Deshabilitar PKCE
   },
   (accessToken, refreshToken, profile, done) => {
     // Para OAuth 2.0, necesitamos hacer una llamada adicional para obtener el perfil
