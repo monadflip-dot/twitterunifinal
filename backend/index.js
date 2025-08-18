@@ -31,14 +31,15 @@ app.use(cookieParser());
 // Configurar sesiones para el mismo dominio
 app.use(session({
   secret: process.env.SESSION_SECRET || 'supersecreto',
-  resave: false,
-  saveUninitialized: false,
+  resave: true,
+  saveUninitialized: true,
   cookie: {
     secure: true, // Para HTTPS
     httpOnly: true,
     sameSite: 'lax', // Para el mismo dominio
     maxAge: 24 * 60 * 60 * 1000 // 24 horas
-  }
+  },
+  store: new (require('express-session').MemoryStore)() // Usar MemoryStore temporalmente
 }));
 
 app.use(passport.initialize());
