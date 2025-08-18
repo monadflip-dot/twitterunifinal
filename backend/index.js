@@ -6,6 +6,7 @@ const cookieParser = require('cookie-parser');
 const cors = require('cors');
 const path = require('path');
 const jwt = require('jsonwebtoken');
+const session = require('express-session');
 const setupPassport = require('./auth');
 const missionsRouter = require('./missions');
 
@@ -28,8 +29,32 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 
-// Inicializar Passport sin sesiones
+// Configurar sesiones mínimas SOLO para OAuth
+app.use(session({
+  secret: process.env.SESSION_SECRET || 'supersecreto',
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    secure: true,
+    httpOnly: true,
+    sameSite: 'lax',
+    maxAge: 10 * 60 * 1000 // Solo 10 minutos para OAuth
+  },
+  store: new (require('express-session').MemoryStore)()
+}));
+
+// Inicializar Passport con sesiones
 app.use(passport.initialize());
+app.use(passport.session());
+
+// Serialización de usuario para sesiones
+passport.serializeUser((user, done) => {
+  done(null, user);
+});
+
+passport.deserializeUser((user, done) => {
+  done(null, user);
+});
 
 // Middleware para verificar JWT
 const authenticateJWT = (req, res, next) => {
@@ -87,6 +112,9 @@ app.get('/auth/twitter/callback',
       sameSite: 'lax',
       maxAge: 24 * 60 * 60 * 1000 // 24 horas
     });
+    
+    // Limpiar la sesión de OAuth
+    req.session.destroy();
     
     res.redirect('/?fromTwitter=success');
   }
