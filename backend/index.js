@@ -9,6 +9,7 @@ const jwt = require('jsonwebtoken');
 const session = require('express-session');
 const setupPassport = require('./auth');
 const missionsRouter = require('./missions');
+const crypto = require('crypto');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -103,10 +104,13 @@ app.get('/auth/twitter', (req, res) => {
   // Generar state aleatorio para seguridad
   const state = Math.random().toString(36).substring(2, 15);
   
+  // Generar code verifier
+  const codeVerifier = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+  
   // Guardar state en memoria temporal
   oauthStates.set(state, {
     timestamp: Date.now(),
-    codeVerifier: Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15)
+    codeVerifier: codeVerifier
   });
   
   // Limpiar states antiguos (más de 10 minutos)
@@ -117,6 +121,12 @@ app.get('/auth/twitter', (req, res) => {
     }
   }
   
+  // Generar code challenge
+  const codeChallenge = generateCodeChallenge(codeVerifier);
+  
+  console.log('🔑 Code verifier generado:', codeVerifier);
+  console.log('🔑 Code challenge generado:', codeChallenge);
+  
   // Construir URL de autorización (formato correcto para Twitter OAuth 2.0)
   const authUrl = `https://twitter.com/i/oauth2/authorize?` +
     `response_type=code&` +
@@ -125,7 +135,7 @@ app.get('/auth/twitter', (req, res) => {
     `scope=tweet.read%20users.read%20like.write%20like.read&` +
     `state=${state}&` +
     `code_challenge_method=S256&` +
-    `code_challenge=${generateCodeChallenge(oauthStates.get(state).codeVerifier)}`;
+    `code_challenge=${codeChallenge}`;
   
   console.log('🔗 Redirigiendo a:', authUrl);
   console.log('🔑 State guardado:', state);
@@ -134,8 +144,10 @@ app.get('/auth/twitter', (req, res) => {
 
 // Función para generar PKCE code challenge
 function generateCodeChallenge(codeVerifier) {
-  // Para simplificar, usamos un hash básico del code verifier
-  return Buffer.from(codeVerifier).toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+  // Generar hash SHA256 del code verifier
+  const hash = crypto.createHash('sha256').update(codeVerifier).digest();
+  // Convertir a base64url (sin padding y reemplazando caracteres)
+  return hash.toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
 }
 
 app.get('/auth/twitter/callback',
@@ -160,6 +172,9 @@ app.get('/auth/twitter/callback',
 
     const stateData = oauthStates.get(state);
     const codeVerifier = stateData.codeVerifier;
+
+    console.log('🔑 Code verifier recuperado:', codeVerifier);
+    console.log('🔑 Code verifier que se enviará a Twitter:', codeVerifier);
 
     try {
       console.log('🔄 Intercambiando código por token...');
