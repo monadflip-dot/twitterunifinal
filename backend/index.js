@@ -87,12 +87,16 @@ app.post('/auth/firebase', async (req, res) => {
 
     // Build user object (prefer Twitter profile info if available)
     const user = {
-      id: profile?.id_str || profile?.id || decoded.uid,
-      username: profile?.screenName || profile?.screen_name || decoded.name || 'user',
+      id: decoded.uid, // Always use Firebase UID for identity
+      username: profile?.screenName || profile?.screen_name || decoded.name || (decoded.uid ? decoded.uid.slice(0, 8) : 'user'),
       displayName: profile?.displayName || profile?.name || decoded.name || 'User',
       photo: profile?.photoURL || decoded.picture || null,
       accessToken: twitterAccessToken || null,
-      accessSecret: twitterAccessSecret || null
+      accessSecret: twitterAccessSecret || null,
+      twitter: {
+        id: profile?.id_str || profile?.id || null,
+        screenName: profile?.screenName || profile?.screen_name || null
+      }
     };
 
     console.log('👤 Creating session for user:', user.username);

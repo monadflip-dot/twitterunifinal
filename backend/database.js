@@ -1,3 +1,4 @@
+// Database helpers using Firestore. Identity is based on Firebase UID passed as userId.
 const { admin, db: firestoreDb } = require('./firebase-admin');
 
 if (!firestoreDb) {
@@ -44,12 +45,10 @@ const dbHelpers = {
 				tx.get(statsRef)
 			]);
 
-			// If already completed, no writes needed
 			if (progressDoc.exists) {
 				return;
 			}
 
-			// WRITES AFTER ALL READS
 			tx.set(progressRef, {
 				id: `${userId}_${missionId}`,
 				userId,
