@@ -42,9 +42,13 @@ function MissionItem({ mission, onComplete }) {
   const handleButtonClick = () => {
     if (mission.completed) return;
     if (!started) {
-      // Solo abrir enlace si es una misión que requiere ir a Twitter (like, retweet, comment)
-      if (mission.tweetUrl && ['like', 'retweet', 'comment'].includes(mission.type)) {
-        window.open(mission.tweetUrl, '_blank', 'noopener');
+      // Abrir enlace según el tipo de misión
+      if (mission.type === 'follow') {
+        // Para misiones de follow, abrir el perfil del usuario
+        window.open(`https://x.com/${mission.targetUserId}`, '_blank', 'noopener');
+      } else if (['like', 'retweet', 'comment'].includes(mission.type)) {
+        // Para misiones de like/retweet/comment, abrir el tweet específico
+        window.open(`https://x.com/ABSPFC/status/${mission.tweetId}`, '_blank', 'noopener');
       }
       setStarted(true);
       return;
