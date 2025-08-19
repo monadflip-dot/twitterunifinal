@@ -46,7 +46,7 @@ router.get('/', ensureAuthenticated, (req, res) => {
   res.json({ missions: exampleMissions });
 });
 
-// Completar misión (verificación real con OAuth 2.0)
+// Completar misión (verificación real con endpoints de escritura)
 router.post('/:id/complete', ensureAuthenticated, async (req, res) => {
   const missionId = parseInt(req.params.id, 10);
   const mission = exampleMissions.find(m => m.id === missionId);
@@ -59,36 +59,52 @@ router.post('/:id/complete', ensureAuthenticated, async (req, res) => {
 
   try {
     if (mission.type === 'like') {
-      // Verificar si el usuario dio like al tweet
-      const likes = await client.v2.userLikedTweets(userId, { max_results: 100 });
-      const liked = likes.data && likes.data.data && likes.data.data.some(t => t.id === mission.tweetId);
-      return res.json({ success: liked, missionId, type: 'like', points: liked ? mission.points : 0 });
+      // Intentar dar like al tweet
+      const likeResponse = await client.v2.like(userId, mission.tweetId);
+      if (likeResponse.data && likeResponse.data.liked) {
+        return res.json({ success: true, missionId, type: 'like', points: mission.points });
+      } else {
+        return res.json({ success: false, message: 'No se pudo dar like al tweet' });
+      }
     }
+    
     if (mission.type === 'retweet') {
-      // Verificar si el usuario retuiteó el tweet
-      const retweets = await client.v2.userTimeline(userId, { max_results: 100, exclude: 'replies' });
-      const retweeted = retweets.data && retweets.data.data && retweets.data.data.some(t => t.referenced_tweets && t.referenced_tweets.some(ref => ref.type === 'retweeted' && ref.id === mission.tweetId));
-      return res.json({ success: retweeted, missionId, type: 'retweet', points: retweeted ? mission.points : 0 });
+      // Intentar hacer retweet
+      const retweetResponse = await client.v2.retweet(userId, mission.tweetId);
+      if (retweetResponse.data && retweetResponse.data.retweeted) {
+        return res.json({ success: true, missionId, type: 'retweet', points: mission.points });
+      } else {
+        return res.json({ success: false, message: 'No se pudo hacer retweet' });
+      }
     }
+    
     if (mission.type === 'comment') {
-      // Verificar si el usuario comentó en el tweet
-      const replies = await client.v2.userTimeline(userId, { max_results: 100, exclude: 'retweets' });
-      const commented = replies.data && replies.data.data && replies.data.data.some(t => t.in_reply_to_user_id && t.in_reply_to_user_id === mission.tweetId);
-      return res.json({ success: commented, missionId, type: 'comment', points: commented ? mission.points : 0 });
+      // Para comentarios, necesitamos crear un tweet como respuesta
+      const commentText = `¡Excelente contenido! #ABSPFC`;
+      const replyResponse = await client.v2.reply(commentText, userId, mission.tweetId);
+      if (replyResponse.data && replyResponse.data.id) {
+        return res.json({ success: true, missionId, type: 'comment', points: mission.points });
+      } else {
+        return res.json({ success: false, message: 'No se pudo comentar en el tweet' });
+      }
     }
+    
     return res.status(400).json({ error: 'Tipo de misión no soportado' });
   } catch (err) {
-    console.error('Error verificando misión:', err);
+    console.error('Error ejecutando misión:', err);
     
-    // Manejar rate limit específicamente
-    if (err.code === 429) {
-      return res.status(429).json({ 
-        error: 'Rate limit excedido. Espera unos minutos antes de intentar verificar la misión.',
-        retryAfter: err.rateLimit?.reset || Date.now() + 900000 // 15 minutos por defecto
+    // Si la acción ya fue realizada, marcar como exitosa
+    if (err.code === 139 && err.message.includes('already')) {
+      return res.json({ 
+        success: true, 
+        missionId, 
+        type: mission.type, 
+        points: mission.points,
+        message: 'Acción ya realizada anteriormente'
       });
     }
     
-    return res.status(500).json({ error: 'Error verificando la acción en Twitter' });
+    return res.status(500).json({ error: 'Error ejecutando la acción en Twitter' });
   }
 });
 

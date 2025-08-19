@@ -67,7 +67,10 @@ function Dashboard({ user, onLogout }) {
           
           // Mostrar mensaje de éxito
           const mission = missions.find(m => m.id === missionId);
-          alert(`¡Misión completada! 🎉\n\nHas ganado ${mission?.points || 0} puntos!`);
+          const successMessage = data.message 
+            ? `¡Misión completada! 🎉\n\n${data.message}\n\nHas ganado ${mission?.points || 0} puntos!`
+            : `¡Misión completada! 🎉\n\nHas ganado ${mission?.points || 0} puntos!`;
+          alert(successMessage);
         } else {
           alert('No se pudo verificar la misión. Asegúrate de haber realizado la acción en Twitter antes de hacer clic en "Completar".');
         }
