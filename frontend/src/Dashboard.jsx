@@ -71,9 +71,15 @@ function Dashboard({ user, onLogout }) {
         } else {
           alert('No se pudo verificar la misión. Asegúrate de haber realizado la acción en Twitter antes de hacer clic en "Completar".');
         }
+      } else if (response.status === 429) {
+        const errorData = await response.json();
+        alert(`Rate limit excedido: ${errorData.error}\n\nEspera unos minutos antes de intentar verificar la misión.`);
+      } else {
+        alert('Error al verificar la misión. Inténtalo de nuevo.');
       }
     } catch (error) {
-      alert('Error al verificar la misión. Inténtalo de nuevo.');
+      console.error('Error verificando misión:', error);
+      alert('Error de conexión. Verifica tu internet e inténtalo de nuevo.');
     }
   };
 

@@ -79,6 +79,15 @@ router.post('/:id/complete', ensureAuthenticated, async (req, res) => {
     return res.status(400).json({ error: 'Tipo de misión no soportado' });
   } catch (err) {
     console.error('Error verificando misión:', err);
+    
+    // Manejar rate limit específicamente
+    if (err.code === 429) {
+      return res.status(429).json({ 
+        error: 'Rate limit excedido. Espera unos minutos antes de intentar verificar la misión.',
+        retryAfter: err.rateLimit?.reset || Date.now() + 900000 // 15 minutos por defecto
+      });
+    }
+    
     return res.status(500).json({ error: 'Error verificando la acción en Twitter' });
   }
 });
