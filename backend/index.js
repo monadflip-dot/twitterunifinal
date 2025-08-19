@@ -114,13 +114,15 @@ app.get('/auth/twitter/callback', async (req, res) => {
   // Check for errors
   if (error) {
     console.log('❌ Twitter OAuth error:', error);
-    return res.redirect(`${process.env.FRONTEND_URL || 'http://localhost:3000'}?error=${error}`);
+    return res.redirect(`${process.env.FRONTEND_URL || 'https://twitterunifinal.onrender.com'}?error=${error}`);
   }
   
   // Verify state
   if (state !== req.session.oauthState) {
     console.log('❌ Invalid state parameter');
-    return res.redirect(`${process.env.FRONTEND_URL || 'http://localhost:3000'}?error=invalid_state`);
+    console.log('Expected state:', req.session.oauthState);
+    console.log('Received state:', state);
+    return res.redirect(`${process.env.FRONTEND_URL || 'https://twitterunifinal.onrender.com'}?error=invalid_state`);
   }
   
   try {
@@ -144,7 +146,7 @@ app.get('/auth/twitter/callback', async (req, res) => {
     if (!tokenResponse.ok) {
       const errorText = await tokenResponse.text();
       console.log('❌ Token exchange failed:', tokenResponse.status, errorText);
-      return res.redirect(`${process.env.FRONTEND_URL || 'http://localhost:3000'}?error=token_error`);
+      return res.redirect(`${process.env.FRONTEND_URL || 'https://twitterunifinal.onrender.com'}?error=token_error`);
     }
     
     const tokenData = await tokenResponse.json();
@@ -193,11 +195,11 @@ app.get('/auth/twitter/callback', async (req, res) => {
     });
     
     console.log('✅ Authentication successful, redirecting to frontend');
-    res.redirect(process.env.FRONTEND_URL || 'http://localhost:3000');
+    res.redirect(process.env.FRONTEND_URL || 'https://twitterunifinal.onrender.com');
     
   } catch (error) {
     console.error('💥 Error in OAuth callback:', error);
-    res.redirect(`${process.env.FRONTEND_URL || 'http://localhost:3000'}?error=callback_error`);
+    res.redirect(`${process.env.FRONTEND_URL || 'https://twitterunifinal.onrender.com'}?error=callback_error`);
   }
 });
 
