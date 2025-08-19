@@ -15,6 +15,14 @@ function Dashboard({ user, onLogout }) {
   const [loading, setLoading] = useState(false);
   const [loadingMissionId, setLoadingMissionId] = useState(null);
 
+  // Debug log para ver qué usuario llega
+  useEffect(() => {
+    console.log('🔍 Dashboard received user:', user);
+    console.log('🔍 User photo:', user?.photo);
+    console.log('🔍 User displayName:', user?.displayName);
+    console.log('🔍 User username:', user?.username);
+  }, [user]);
+
   useEffect(() => {
     fetchMissions();
   }, []);

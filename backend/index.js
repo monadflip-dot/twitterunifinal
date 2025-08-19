@@ -203,6 +203,7 @@ app.get('/auth/twitter/callback', async (req, res) => {
     }
     
     console.log('✅ User data obtained:', user.username);
+    console.log('🔍 Full user object:', JSON.stringify(user, null, 2));
     
     // Save user to database
     try {
@@ -253,6 +254,7 @@ app.get('/auth/logout', (req, res) => {
 // User info endpoint
 app.get('/api/user', authenticateJWT, (req, res) => {
   console.log('👤 Authenticated user with JWT:', req.user.username);
+  console.log('🔍 Full user object from JWT:', JSON.stringify(req.user, null, 2));
   res.json({ user: req.user });
 });
 
