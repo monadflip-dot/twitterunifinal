@@ -55,20 +55,18 @@ router.get('/', ensureAuthenticated, (req, res) => {
 const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
 // Función helper para retry con exponential backoff
-async function retryWithBackoff(fn, maxRetries = 3, baseDelay = 1000) {
+async function retryWithBackoff(fn, maxRetries = 2, baseDelay = 1000) {
   for (let i = 0; i < maxRetries; i++) {
     try {
       return await fn();
     } catch (error) {
       if (i === maxRetries - 1) throw error;
-      
       if (error.code === 429) {
         const delayMs = baseDelay * Math.pow(2, i) + Math.random() * 1000;
         console.log(`Rate limit hit, retrying in ${Math.round(delayMs)}ms...`);
         await delay(delayMs);
         continue;
       }
-      
       throw error;
     }
   }
