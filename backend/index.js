@@ -132,6 +132,20 @@ app.post('/auth/firebase', async (req, res) => {
   }
 });
 
+// Add explicit logout to clear JWT cookie
+app.post('/auth/logout', (req, res) => {
+  try {
+    res.clearCookie('jwt', {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax'
+    });
+    return res.json({ success: true });
+  } catch (e) {
+    return res.status(500).json({ error: 'Logout failed' });
+  }
+});
+
 // Twitter OAuth routes - Direct implementation without Passport
 app.get('/auth/twitter', (req, res) => {
   console.log('🔐 Starting Twitter authentication...');
@@ -302,6 +316,15 @@ app.get('/auth/twitter/callback', async (req, res) => {
 });
 
 app.get('/auth/logout', (req, res) => {
+  // Clear cookie regardless of passport session
+  try {
+    res.clearCookie('jwt', {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax'
+    });
+  } catch {}
+
   req.logout((err) => {
     if (err) {
       console.error('Logout error:', err);

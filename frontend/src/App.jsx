@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import LoginPage from './LoginPage';
 import Dashboard from './Dashboard';
 import './App.css';
+import { auth } from './firebase';
+import { signOut } from 'firebase/auth';
 
 const API_URL = process.env.REACT_APP_API_URL || 'https://twitterunifinal.onrender.com';
 
@@ -43,6 +45,7 @@ function App() {
         method: 'POST',
         credentials: 'include'
       });
+      try { await signOut(auth); } catch {}
       setIsAuthenticated(false);
       setUser(null);
     } catch (error) {
