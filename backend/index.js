@@ -8,6 +8,7 @@ const jwt = require('jsonwebtoken');
 const path = require('path');
 const cookieParser = require('cookie-parser');
 const { dbHelpers } = require('./database');
+const { auth: firebaseAdminAuth } = require('./firebase-admin');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -71,6 +72,61 @@ const authenticateJWT = (req, res, next) => {
 
 // Routes
 app.use('/api/missions', authenticateJWT, missionsRouter);
+
+// Firebase Auth login endpoint (from frontend)
+app.post('/auth/firebase', async (req, res) => {
+  try {
+    const { idToken, twitterAccessToken, twitterAccessSecret, profile } = req.body || {};
+    if (!idToken) {
+      return res.status(400).json({ error: 'Missing Firebase ID token' });
+    }
+
+    // Verify Firebase ID token
+    const decoded = await firebaseAdminAuth.verifyIdToken(idToken);
+    console.log('✅ Firebase ID token verified for uid:', decoded.uid);
+
+    // Build user object (prefer Twitter profile info if available)
+    const user = {
+      id: profile?.id_str || profile?.id || decoded.uid,
+      username: profile?.screenName || profile?.screen_name || decoded.name || 'user',
+      displayName: profile?.displayName || profile?.name || decoded.name || 'User',
+      photo: profile?.photoURL || decoded.picture || null,
+      accessToken: twitterAccessToken || null,
+      accessSecret: twitterAccessSecret || null
+    };
+
+    console.log('👤 Creating session for user:', user.username);
+
+    // Persist basic user info (tokens remain in JWT)
+    try {
+      await dbHelpers.createOrUpdateUser({
+        id: user.id,
+        username: user.username,
+        displayName: user.displayName,
+        photo: user.photo,
+        accessToken: user.accessToken || ''
+      });
+      console.log('✅ User saved to database:', user.username);
+    } catch (dbError) {
+      console.error('❌ Error saving user to database:', dbError);
+      // Continue even if DB write fails
+    }
+
+    // Issue our JWT session cookie
+    const token = jwt.sign(user, process.env.SESSION_SECRET || 'your-secret-key', { expiresIn: '24h' });
+    res.cookie('jwt', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 24 * 60 * 60 * 1000
+    });
+
+    return res.json({ success: true });
+  } catch (err) {
+    console.error('💥 Error in /auth/firebase:', err);
+    return res.status(401).json({ error: 'Firebase auth failed' });
+  }
+});
 
 // Twitter OAuth routes - Direct implementation without Passport
 app.get('/auth/twitter', (req, res) => {
