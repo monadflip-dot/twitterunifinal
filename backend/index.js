@@ -11,9 +11,12 @@ const cookieParser = require('cookie-parser');
 const app = express();
 const PORT = process.env.PORT || 3001;
 
+// Temporary storage for OAuth state (works better with Render's multiple instances)
+const oauthStates = new Map();
+
 // Middleware
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+  origin: process.env.FRONTEND_URL || 'https://twitterunifinal.onrender.com',
   credentials: true
 }));
 
@@ -79,33 +82,36 @@ app.get('/auth/twitter', (req, res) => {
   const state = Math.random().toString(36).substring(2, 15);
   const codeVerifier = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
   
-  // Store both in session with better error handling
-  req.session.oauthState = state;
-  req.session.codeVerifier = codeVerifier;
-  
-  // Force session save
-  req.session.save((err) => {
-    if (err) {
-      console.error('❌ Error saving session:', err);
-      return res.status(500).json({ error: 'Session error' });
-    }
-    
-    console.log('✅ Session saved with state:', state);
-    console.log('✅ Session saved with codeVerifier:', codeVerifier);
-    
-    // Build Twitter OAuth URL with PKCE
-    const authUrl = `https://twitter.com/i/oauth2/authorize?` +
-      `response_type=code&` +
-      `client_id=${process.env.TWITTER_CLIENT_ID}&` +
-      `redirect_uri=${encodeURIComponent(process.env.TWITTER_CALLBACK_URL)}&` +
-      `scope=tweet.read%20users.read%20like.write%20like.read&` +
-      `state=${state}&` +
-      `code_challenge_method=S256&` +
-      `code_challenge=${generateCodeChallenge(codeVerifier)}`;
-    
-    console.log('🔗 Redirecting to:', authUrl);
-    res.redirect(authUrl);
+  // Store in temporary memory storage with timestamp
+  oauthStates.set(state, {
+    codeVerifier: codeVerifier,
+    timestamp: Date.now()
   });
+  
+  // Clean up old states (older than 10 minutes)
+  const tenMinutesAgo = Date.now() - 10 * 60 * 1000;
+  for (const [key, value] of oauthStates.entries()) {
+    if (value.timestamp < tenMinutesAgo) {
+      oauthStates.delete(key);
+    }
+  }
+  
+  console.log('✅ OAuth state stored in memory:', state);
+  console.log('✅ Code verifier stored:', codeVerifier);
+  console.log('✅ Total states in memory:', oauthStates.size);
+  
+  // Build Twitter OAuth URL with PKCE
+  const authUrl = `https://twitter.com/i/oauth2/authorize?` +
+    `response_type=code&` +
+    `client_id=${process.env.TWITTER_CLIENT_ID}&` +
+    `redirect_uri=${encodeURIComponent(process.env.TWITTER_CALLBACK_URL)}&` +
+    `scope=tweet.read%20users.read%20like.write%20like.read&` +
+    `state=${state}&` +
+    `code_challenge_method=S256&` +
+    `code_challenge=${generateCodeChallenge(codeVerifier)}`;
+  
+  console.log('🔗 Redirecting to:', authUrl);
+  res.redirect(authUrl);
 });
 
 // Helper function to generate PKCE code challenge
@@ -118,10 +124,7 @@ function generateCodeChallenge(verifier) {
 app.get('/auth/twitter/callback', async (req, res) => {
   console.log('📱 Twitter callback received');
   console.log('Query params:', req.query);
-  console.log('Session ID:', req.sessionID);
-  console.log('Session data:', req.session);
-  console.log('OAuth State in session:', req.session.oauthState);
-  console.log('Code Verifier in session:', req.session.codeVerifier);
+  console.log('Total states in memory:', oauthStates.size);
   
   const { code, state, error } = req.query;
   
@@ -131,19 +134,17 @@ app.get('/auth/twitter/callback', async (req, res) => {
     return res.redirect(`${process.env.FRONTEND_URL || 'https://twitterunifinal.onrender.com'}?error=${error}`);
   }
   
-  // Verify state with better error handling
-  if (!req.session.oauthState) {
-    console.log('❌ No OAuth state found in session');
+  // Verify state with memory storage
+  if (!oauthStates.has(state)) {
+    console.log('❌ No OAuth state found in memory storage');
+    console.log('Received state:', state);
+    console.log('Available states:', Array.from(oauthStates.keys()));
     return res.redirect(`${process.env.FRONTEND_URL || 'https://twitterunifinal.onrender.com'}?error=no_session_state`);
   }
   
-  if (state !== req.session.oauthState) {
-    console.log('❌ Invalid state parameter');
-    console.log('Expected state:', req.session.oauthState);
-    console.log('Received state:', state);
-    console.log('Session ID:', req.sessionID);
-    return res.redirect(`${process.env.FRONTEND_URL || 'https://twitterunifinal.onrender.com'}?error=invalid_state`);
-  }
+  const oauthData = oauthStates.get(state);
+  console.log('✅ OAuth state found in memory:', state);
+  console.log('✅ Code verifier from memory:', oauthData.codeVerifier);
   
   try {
     console.log('🔄 Exchanging code for token...');
@@ -159,7 +160,7 @@ app.get('/auth/twitter/callback', async (req, res) => {
         grant_type: 'authorization_code',
         code: code,
         redirect_uri: process.env.TWITTER_CALLBACK_URL,
-        code_verifier: req.session.codeVerifier
+        code_verifier: oauthData.codeVerifier
       })
     });
     
@@ -214,15 +215,18 @@ app.get('/auth/twitter/callback', async (req, res) => {
       maxAge: 24 * 60 * 60 * 1000 // 24 hours
     });
     
-    // Clear OAuth session data
-    delete req.session.oauthState;
-    delete req.session.codeVerifier;
+    // Clear OAuth state from memory
+    oauthStates.delete(state);
+    console.log('✅ OAuth state cleared from memory');
+    console.log('✅ Remaining states in memory:', oauthStates.size);
     
     console.log('✅ Authentication successful, redirecting to frontend');
     res.redirect(process.env.FRONTEND_URL || 'https://twitterunifinal.onrender.com');
     
   } catch (error) {
     console.error('💥 Error in OAuth callback:', error);
+    // Clear OAuth state on error too
+    oauthStates.delete(state);
     res.redirect(`${process.env.FRONTEND_URL || 'https://twitterunifinal.onrender.com'}?error=callback_error`);
   }
 });
