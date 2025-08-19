@@ -12,14 +12,13 @@ function ensureAuthenticated(req, res, next) {
 
 // Misiones específicas con la publicación de ABSPFC
 const exampleMissions = [
-  { 
+  {
     id: 1, 
     type: 'like', 
     description: 'Dale like al tweet de ABSPFC sobre el partido', 
     tweetId: '1957149650118377661', 
     points: 50,
-    completed: false,
-    tweetUrl: 'https://x.com/ABSPFC/status/1957149650118377661'
+    completed: false
   },
   { 
     id: 2, 
@@ -27,8 +26,7 @@ const exampleMissions = [
     description: 'Haz retweet al tweet de ABSPFC', 
     tweetId: '1957149650118377661', 
     points: 75,
-    completed: false,
-    tweetUrl: 'https://x.com/ABSPFC/status/1957149650118377661'
+    completed: false
   },
   { 
     id: 3, 
@@ -36,9 +34,16 @@ const exampleMissions = [
     description: 'Comenta en el tweet de ABSPFC', 
     tweetId: '1957149650118377661', 
     points: 100,
-    completed: false,
-    tweetUrl: 'https://x.com/ABSPFC/status/1957149650118377661'
+    completed: false
   },
+  {
+    id: 4,
+    type: 'follow',
+    description: 'Sigue la cuenta oficial de ABSPFC en Twitter',
+    targetUserId: 'ABSPFC',
+    points: 150,
+    completed: false
+  }
 ];
 
 // Obtener misiones
@@ -86,6 +91,16 @@ router.post('/:id/complete', ensureAuthenticated, async (req, res) => {
         return res.json({ success: true, missionId, type: 'comment', points: mission.points });
       } else {
         return res.json({ success: false, message: 'No se pudo comentar en el tweet' });
+      }
+    }
+    
+    if (mission.type === 'follow') {
+      // Intentar seguir al usuario objetivo
+      const followResponse = await client.v2.follow(userId, mission.targetUserId);
+      if (followResponse.data && followResponse.data.following) {
+        return res.json({ success: true, missionId, type: 'follow', points: mission.points });
+      } else {
+        return res.json({ success: false, message: 'No se pudo seguir al usuario' });
       }
     }
     

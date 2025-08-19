@@ -10,6 +10,8 @@ function MissionItem({ mission, onComplete }) {
         return 'fas fa-retweet';
       case 'comment':
         return 'fas fa-comment';
+      case 'follow':
+        return 'fas fa-user-plus';
       default:
         return 'fas fa-star';
     }
@@ -23,6 +25,8 @@ function MissionItem({ mission, onComplete }) {
         return 'Hacer Retweet';
       case 'comment':
         return 'Comentar';
+      case 'follow':
+        return 'Seguir Usuario';
       default:
         return 'Completar Misión';
     }
@@ -38,7 +42,8 @@ function MissionItem({ mission, onComplete }) {
   const handleButtonClick = () => {
     if (mission.completed) return;
     if (!started) {
-      if (mission.tweetUrl) {
+      // Solo abrir enlace si es una misión que requiere ir a Twitter (like, retweet, comment)
+      if (mission.tweetUrl && ['like', 'retweet', 'comment'].includes(mission.type)) {
         window.open(mission.tweetUrl, '_blank', 'noopener');
       }
       setStarted(true);
@@ -74,18 +79,6 @@ function MissionItem({ mission, onComplete }) {
         <div className="mission-description">
           {mission.description}
         </div>
-        
-        {mission.tweetUrl && (
-          <a 
-            href={mission.tweetUrl} 
-            target="_blank" 
-            rel="noopener noreferrer"
-            className="mission-link"
-          >
-            <i className="fas fa-external-link-alt"></i>
-            Ver tweet en Twitter
-          </a>
-        )}
         
         <div className="mission-footer">
           <div className="mission-points">
