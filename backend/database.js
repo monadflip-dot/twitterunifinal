@@ -38,10 +38,18 @@ const dbHelpers = {
 		const progressRef = firestoreDb.collection('user_progress').doc(`${userId}_${missionId}`);
 		const statsRef = firestoreDb.collection('user_stats').doc(userId);
 		await firestoreDb.runTransaction(async (tx) => {
-			const progressDoc = await tx.get(progressRef);
+			// READS FIRST
+			const [progressDoc, statsDoc] = await Promise.all([
+				tx.get(progressRef),
+				tx.get(statsRef)
+			]);
+
+			// If already completed, no writes needed
 			if (progressDoc.exists) {
 				return;
 			}
+
+			// WRITES AFTER ALL READS
 			tx.set(progressRef, {
 				id: `${userId}_${missionId}`,
 				userId,
@@ -50,7 +58,6 @@ const dbHelpers = {
 				completedAt: FieldValue.serverTimestamp()
 			});
 
-			const statsDoc = await tx.get(statsRef);
 			if (statsDoc.exists) {
 				tx.update(statsRef, {
 					totalPoints: FieldValue.increment(points),
