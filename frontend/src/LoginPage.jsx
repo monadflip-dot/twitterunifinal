@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import favicon from '../images/favicon.png';
 import { auth, twitterProvider } from './firebase';
-import { getAdditionalUserInfo, TwitterAuthProvider, signInWithRedirect, getRedirectResult, signOut } from 'firebase/auth';
+import { getAdditionalUserInfo, TwitterAuthProvider, signInWithRedirect, getRedirectResult, signOut, onAuthStateChanged } from 'firebase/auth';
 
 const API_URL = process.env.REACT_APP_API_URL || 'https://twitterunifinal.onrender.com';
 
@@ -19,6 +19,34 @@ function LoginPage() {
 				console.error('Firebase Twitter redirect failed:', e?.code, e?.message);
 			}
 		})();
+	}, []);
+
+	// Fallback: si ya hay usuario autenticado en Firebase pero no se procesó el resultado
+	useEffect(() => {
+		const unsub = onAuthStateChanged(auth, async (firebaseUser) => {
+			if (!firebaseUser) return;
+			try {
+				const idToken = await firebaseUser.getIdToken();
+				await fetch(`${API_URL}/auth/firebase`, {
+					method: 'POST',
+					headers: { 'Content-Type': 'application/json' },
+					credentials: 'include',
+					body: JSON.stringify({
+						idToken,
+						profile: {
+							uid: firebaseUser.uid,
+							displayName: firebaseUser.displayName,
+							photoURL: firebaseUser.photoURL,
+							email: firebaseUser.email
+						}
+					})
+				});
+				window.location.replace('/');
+			} catch (e) {
+				console.error('Auth state sync failed:', e?.code, e?.message);
+			}
+		});
+		return () => unsub();
 	}, []);
 
 	const handleResult = async (result) => {
