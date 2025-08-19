@@ -55,11 +55,25 @@ const authenticateJWT = (req, res, next) => {
 app.use('/api/missions', authenticateJWT, missionsRouter);
 
 // Twitter OAuth routes
-app.get('/auth/twitter', passport.authenticate('oauth2'));
+app.get('/auth/twitter', (req, res) => {
+  console.log('🔐 Starting Twitter authentication...');
+  console.log('🔑 Client ID:', process.env.TWITTER_CLIENT_ID ? 'Set' : 'Missing');
+  console.log('🔑 Client Secret:', process.env.TWITTER_CLIENT_SECRET ? 'Set' : 'Missing');
+  console.log('🔗 Callback URL:', process.env.TWITTER_CALLBACK_URL || 'Not set');
+  
+  passport.authenticate('oauth2')(req, res);
+});
 
 app.get('/auth/twitter/callback', 
-  passport.authenticate('oauth2', { failureRedirect: '/login' }),
+  (req, res, next) => {
+    console.log('📱 Twitter callback received');
+    console.log('Query params:', req.query);
+    console.log('Session:', req.session);
+    
+    passport.authenticate('oauth2', { failureRedirect: '/login' })(req, res, next);
+  },
   (req, res) => {
+    console.log('✅ Authentication successful, user:', req.user);
     // Successful authentication, redirect to frontend
     res.redirect(process.env.FRONTEND_URL || 'http://localhost:3000');
   }

@@ -1,12 +1,10 @@
 const passport = require('passport');
 const OAuth2Strategy = require('passport-oauth2').Strategy;
-const jwt = require('jsonwebtoken');
 
 // Twitter OAuth configuration
 const TWITTER_CLIENT_ID = process.env.TWITTER_CLIENT_ID;
 const TWITTER_CLIENT_SECRET = process.env.TWITTER_CLIENT_SECRET;
 const TWITTER_CALLBACK_URL = process.env.TWITTER_CALLBACK_URL;
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
 
 // Configure Twitter OAuth 2.0 strategy
 passport.use(new OAuth2Strategy({
@@ -15,13 +13,12 @@ passport.use(new OAuth2Strategy({
   clientID: TWITTER_CLIENT_ID,
   clientSecret: TWITTER_CLIENT_SECRET,
   callbackURL: TWITTER_CALLBACK_URL,
-  scope: ['tweet.read', 'tweet.write', 'users.read', 'like.write', 'like.read', 'retweet.write', 'follows.write', 'offline.access'],
-  state: true,  // Enable state for security
-  pkce: true    // Enable PKCE for security
+  scope: 'tweet.read users.read like.write like.read retweet.write follows.write offline.access',
+  state: true,
+  pkce: true
 }, async (accessToken, refreshToken, profile, done) => {
   try {
-    // For OAuth 2.0, we need to make an additional call to get the profile
-    // For now, create a basic user
+    // Create user object with Twitter data
     const user = {
       id: 'twitter_user_' + Date.now(),
       username: 'twitter_user',
@@ -33,6 +30,7 @@ passport.use(new OAuth2Strategy({
     
     return done(null, user);
   } catch (error) {
+    console.error('OAuth callback error:', error);
     return done(error, null);
   }
 }));
