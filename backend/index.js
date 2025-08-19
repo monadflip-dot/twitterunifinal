@@ -7,6 +7,7 @@ const session = require('express-session');
 const jwt = require('jsonwebtoken');
 const path = require('path');
 const cookieParser = require('cookie-parser');
+const { dbHelpers } = require('./database');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -203,8 +204,16 @@ app.get('/auth/twitter/callback', async (req, res) => {
     
     console.log('✅ User data obtained:', user.username);
     
+    // Save user to database
+    try {
+      await dbHelpers.createOrUpdateUser(user);
+      console.log('✅ User saved to database:', user.username);
+    } catch (dbError) {
+      console.error('❌ Error saving user to database:', dbError);
+      return res.redirect(`${process.env.FRONTEND_URL || 'https://twitterunifinal.onrender.com'}?error=db_save_error`);
+    }
+    
     // Generate JWT
-    const jwt = require('jsonwebtoken');
     const token = jwt.sign(user, process.env.SESSION_SECRET || 'your-secret-key', { expiresIn: '24h' });
     
     // Set JWT cookie and redirect

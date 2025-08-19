@@ -1,5 +1,6 @@
 const express = require('express');
 const { TwitterApi } = require('twitter-api-v2');
+const { dbHelpers } = require('./database');
 const router = express.Router();
 
 // Middleware to protect routes (using JWT instead of sessions)
@@ -46,15 +47,56 @@ const exampleMissions = [
   }
 ];
 
-// Obtener misiones
-router.get('/', ensureAuthenticated, (req, res) => {
-  res.json({ missions: exampleMissions });
+// Get missions with user progress
+router.get('/', ensureAuthenticated, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    
+    // Get user progress from database
+    const userProgress = await dbHelpers.getUserProgress(userId);
+    const completedMissionIds = userProgress.map(p => p.missionId);
+    
+    // Mark missions as completed based on database
+    const missionsWithProgress = exampleMissions.map(mission => ({
+      ...mission,
+      completed: completedMissionIds.includes(mission.id)
+    }));
+    
+    res.json({ missions: missionsWithProgress });
+  } catch (error) {
+    console.error('Error getting missions:', error);
+    res.status(500).json({ error: 'Failed to get missions' });
+  }
 });
 
-// Función helper para delay
+// Get user stats
+router.get('/stats', ensureAuthenticated, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const stats = await dbHelpers.getUserStats(userId);
+    res.json(stats);
+  } catch (error) {
+    console.error('Error getting user stats:', error);
+    res.status(500).json({ error: 'Failed to get user stats' });
+  }
+});
+
+// Get leaderboard
+router.get('/leaderboard', ensureAuthenticated, async (req, res) => {
+  try {
+    const limit = parseInt(req.query.limit) || 10;
+    const leaderboard = await dbHelpers.getLeaderboard(limit);
+    res.json({ leaderboard });
+  } catch (error) {
+    console.error('Error getting leaderboard:', error);
+    res.status(500).json({ error: 'Failed to get leaderboard' });
+  }
+});
+
+// Helper function for delay
 const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
-// Función helper para retry con exponential backoff
+// Helper function for retry with exponential backoff
 async function retryWithBackoff(fn, maxRetries = 2, baseDelay = 1000) {
   for (let i = 0; i < maxRetries; i++) {
     try {
@@ -72,7 +114,7 @@ async function retryWithBackoff(fn, maxRetries = 2, baseDelay = 1000) {
   }
 }
 
-// Completar misión (verificación real con retry inteligente)
+// Complete mission (verification real with retry intelligent)
 router.post('/:id/complete', ensureAuthenticated, async (req, res) => {
   const missionId = parseInt(req.params.id, 10);
   const mission = exampleMissions.find(m => m.id === missionId);
@@ -80,22 +122,26 @@ router.post('/:id/complete', ensureAuthenticated, async (req, res) => {
 
   const { accessToken, id: userId } = req.user;
   
-  // Usar OAuth 2.0 con access token
+  // Use OAuth 2.0 with access token
   const client = new TwitterApi(accessToken);
 
   try {
     if (mission.type === 'like') {
-      // ESTRATEGIA 1: Intentar like directo con retry
+      // STRATEGY 1: Try direct like with retry
       try {
         const likeResponse = await retryWithBackoff(async () => {
           return await client.v2.like(userId, mission.tweetId);
         });
         console.log('Like successful with retry:', likeResponse);
+        
+        // Save to database
+        await dbHelpers.completeMission(userId, missionId, mission.points);
+        
         return res.json({ success: true, missionId, type: 'like', points: mission.points, method: 'direct' });
       } catch (error) {
         console.log('Direct like failed, attempting verification by reading...');
         
-        // ESTRATEGIA 2: Verificar si ya dio like (endpoint diferente)
+        // STRATEGY 2: Verify if already liked (different endpoint)
         try {
           const likes = await retryWithBackoff(async () => {
             return await client.v2.userLikedTweets(userId, { max_results: 100 });
@@ -103,19 +149,26 @@ router.post('/:id/complete', ensureAuthenticated, async (req, res) => {
           
           const liked = likes.data && likes.data.data && likes.data.data.some(t => t.id === mission.tweetId);
           if (liked) {
+            // Save to database
+            await dbHelpers.completeMission(userId, missionId, mission.points);
+            
             return res.json({ success: true, missionId, type: 'like', points: mission.points, method: 'verification' });
           }
         } catch (verificationError) {
           console.log('Verification by reading also failed:', verificationError.code);
         }
         
-        // ESTRATEGIA 3: Permitir verificación manual como último recurso
+        // STRATEGY 3: Allow manual verification as last resort
         console.log('Sending manual fallback response for like:', {
           success: true,
           missionId,
           type: 'like',
           points: mission.points
         });
+        
+        // Save to database
+        await dbHelpers.completeMission(userId, missionId, mission.points);
+        
         return res.json({ 
           success: true, 
           missionId, 
@@ -133,6 +186,10 @@ router.post('/:id/complete', ensureAuthenticated, async (req, res) => {
           return await client.v2.retweet(userId, mission.tweetId);
         });
         console.log('Retweet successful with retry:', retweetResponse);
+        
+        // Save to database
+        await dbHelpers.completeMission(userId, missionId, mission.points);
+        
         return res.json({ success: true, missionId, type: 'retweet', points: mission.points, method: 'direct' });
       } catch (error) {
         console.log('Direct retweet failed, attempting verification by reading...');
@@ -146,11 +203,17 @@ router.post('/:id/complete', ensureAuthenticated, async (req, res) => {
             t.referenced_tweets && t.referenced_tweets.some(ref => ref.type === 'retweeted' && ref.id === mission.tweetId)
           );
           if (retweeted) {
+            // Save to database
+            await dbHelpers.completeMission(userId, missionId, mission.points);
+            
             return res.json({ success: true, missionId, type: 'retweet', points: mission.points, method: 'verification' });
           }
         } catch (verificationError) {
           console.log('Verification by reading also failed:', verificationError.code);
         }
+        
+        // Save to database
+        await dbHelpers.completeMission(userId, missionId, mission.points);
         
         return res.json({ 
           success: true, 
@@ -170,9 +233,17 @@ router.post('/:id/complete', ensureAuthenticated, async (req, res) => {
           return await client.v2.reply(commentText, userId, mission.tweetId);
         });
         console.log('Comment successful with retry:', replyResponse);
+        
+        // Save to database
+        await dbHelpers.completeMission(userId, missionId, mission.points);
+        
         return res.json({ success: true, missionId, type: 'comment', points: mission.points, method: 'direct' });
       } catch (error) {
         console.log('Direct comment failed, allowing manual verification...');
+        
+        // Save to database
+        await dbHelpers.completeMission(userId, missionId, mission.points);
+        
         return res.json({ 
           success: true, 
           missionId, 
@@ -190,9 +261,17 @@ router.post('/:id/complete', ensureAuthenticated, async (req, res) => {
           return await client.v2.follow(userId, mission.targetUserId);
         });
         console.log('Follow successful with retry:', followResponse);
+        
+        // Save to database
+        await dbHelpers.completeMission(userId, missionId, mission.points);
+        
         return res.json({ success: true, missionId, type: 'follow', points: mission.points, method: 'direct' });
       } catch (error) {
         console.log('Direct follow failed, allowing manual verification...');
+        
+        // Save to database
+        await dbHelpers.completeMission(userId, missionId, mission.points);
+        
         return res.json({ 
           success: true, 
           missionId, 
@@ -208,8 +287,11 @@ router.post('/:id/complete', ensureAuthenticated, async (req, res) => {
   } catch (err) {
     console.error('Critical error executing mission:', err);
     
-    // Si la acción ya fue realizada, marcar como exitosa
+    // If action already performed, mark as successful
     if (err.code === 139 || err.message.includes('already') || err.message.includes('duplicate')) {
+      // Save to database
+      await dbHelpers.completeMission(userId, missionId, mission.points);
+      
       return res.json({ 
         success: true, 
         missionId, 
