@@ -9,7 +9,7 @@ function setupPassport() {
     clientID: process.env.TWITTER_CLIENT_ID,
     clientSecret: process.env.TWITTER_CLIENT_SECRET,
     callbackURL: process.env.TWITTER_CALLBACK_URL,
-    scope: ['tweet.read', 'users.read', 'like.write', 'like.read'],
+    scope: ['tweet.read', 'tweet.write', 'users.read', 'like.write', 'like.read', 'retweet.write', 'follows.write', 'offline.access'],
     state: true,  // Habilitar state para seguridad
     pkce: true    // Habilitar PKCE para seguridad
   },
