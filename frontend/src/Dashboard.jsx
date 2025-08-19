@@ -53,7 +53,7 @@ function Dashboard({ user, onLogout }) {
       // Simular delay de lectura/verificación
       await new Promise(resolve => setTimeout(resolve, 5000));
       
-      const response = await fetch(`${process.env.REACT_APP_API_URL}/api/missions/${missionId}/complete`, {
+      const response = await fetch(`${API_URL}/api/missions/${missionId}/complete`, {
         method: 'POST',
         credentials: 'include'
       });
