@@ -177,25 +177,27 @@ body, html {
 /* Dashboard */
 .dashboard-container {
   min-height: 100vh;
-  padding: 20px;
-  width: 100%;
-  display: flex;
-  justify-content: center;
+  width: 100vw;
+  padding: 0;
+  margin: 0;
 }
 
 .dashboard-background {
   background: linear-gradient(135deg, #2a2a2a 0%, #1f1f1f 100%);
-  border-radius: 15px;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-  border: 1px solid #444;
+  border-radius: 0;
+  box-shadow: none;
+  border: none;
   overflow: hidden;
-  width: 100%;
-  min-width: 100%;
+  width: 100vw;
+  min-height: 100vh;
+  margin: 0;
+  padding: 0;
 }
 
 .dashboard-panel {
   padding: 0;
   width: 100%;
+  margin: 0;
 }
 
 /* Dashboard Header - ancho completo */
@@ -204,6 +206,7 @@ body, html {
   padding: 50px;
   text-align: center;
   width: 100%;
+  margin: 0;
 }
 
 .dashboard-header h1 {
@@ -229,6 +232,7 @@ body, html {
   background: linear-gradient(135deg, #333 0%, #2a2a2a 100%);
   border-bottom: 1px solid #444;
   width: 100%;
+  margin: 0;
 }
 
 .user-info {
@@ -285,6 +289,7 @@ body, html {
   padding: 40px 50px;
   background: linear-gradient(135deg, #333 0%, #2a2a2a 100%);
   width: 100%;
+  margin: 0;
 }
 
 .stat-item {
@@ -338,6 +343,7 @@ body, html {
   padding: 50px;
   background: linear-gradient(135deg, #2a2a2a 0%, #1f1f1f 100%);
   width: 100%;
+  margin: 0;
 }
 
 .section-header {
@@ -365,6 +371,7 @@ body, html {
   flex-direction: column;
   gap: 25px;
   width: 100%;
+  margin: 0;
 }
 
 /* Mission Item - ancho completo */
@@ -380,6 +387,7 @@ body, html {
   overflow: hidden;
   min-height: 180px;
   width: 100%;
+  margin: 0;
 }
 
 .mission-item:hover {
@@ -555,7 +563,7 @@ body, html {
 
 @media (max-width: 768px) {
   .dashboard-container {
-    padding: 10px;
+    padding: 0;
   }
   
   .dashboard-header {
@@ -602,12 +610,12 @@ body, html {
   
   .login-container,
   .dashboard-container {
-    padding: 10px;
+    padding: 0;
   }
   
   .login-background,
   .dashboard-background {
-    border-radius: 10px;
+    border-radius: 0;
   }
   
   .stats-section,
