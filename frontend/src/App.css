@@ -180,6 +180,7 @@ body, html {
   padding: 20px;
   display: flex;
   justify-content: center;
+  width: 100%;
 }
 
 .dashboard-background {
@@ -189,21 +190,21 @@ body, html {
   border: 1px solid #444;
   overflow: hidden;
   width: 100%;
-  max-width: 1600px;
+  max-width: 1800px;
   margin: 0 auto;
 }
 
 .dashboard-panel {
   padding: 0;
+  width: 100%;
 }
 
-/* Dashboard Header - más ancho y centrado */
+/* Dashboard Header - centrado y ancho completo */
 .dashboard-header {
   background: linear-gradient(135deg, #8B4513 0%, #A0522D 100%);
   padding: 50px;
   text-align: center;
-  max-width: 1400px;
-  margin: 0 auto;
+  width: 100%;
 }
 
 .dashboard-header h1 {
@@ -220,7 +221,7 @@ body, html {
   font-weight: 400;
 }
 
-/* User Section - más ancho y centrado */
+/* User Section - centrado y ancho completo */
 .user-section {
   display: flex;
   justify-content: space-between;
@@ -228,8 +229,7 @@ body, html {
   padding: 40px 50px;
   background: linear-gradient(135deg, #333 0%, #2a2a2a 100%);
   border-bottom: 1px solid #444;
-  max-width: 1400px;
-  margin: 0 auto;
+  width: 100%;
 }
 
 .user-info {
@@ -278,15 +278,14 @@ body, html {
   box-shadow: 0 5px 15px rgba(220, 53, 69, 0.4);
 }
 
-/* Stats Section - más ancho y centrado */
+/* Stats Section - centrado y ancho completo */
 .stats-section {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
   gap: 25px;
   padding: 40px 50px;
   background: linear-gradient(135deg, #333 0%, #2a2a2a 100%);
-  max-width: 1400px;
-  margin: 0 auto;
+  width: 100%;
 }
 
 .stat-item {
@@ -335,12 +334,11 @@ body, html {
   letter-spacing: 1px;
 }
 
-/* Missions Section - más ancho y centrado */
+/* Missions Section - centrado y ancho completo */
 .missions-section {
   padding: 50px;
   background: linear-gradient(135deg, #2a2a2a 0%, #1f1f1f 100%);
-  max-width: 1400px;
-  margin: 0 auto;
+  width: 100%;
 }
 
 .section-header {
@@ -362,15 +360,15 @@ body, html {
   margin: 0 auto;
 }
 
-/* Missions List - mejor distribución */
+/* Missions List - centrado y ancho completo */
 .missions-list {
   display: flex;
   flex-direction: column;
   gap: 25px;
-  max-width: 1200px;
-  margin: 0 auto;
+  width: 100%;
 }
 
+/* Mission Item - ancho completo */
 .mission-item {
   background: linear-gradient(135deg, #444 0%, #3a3a3a 100%);
   border: 1px solid #555;
@@ -382,6 +380,7 @@ body, html {
   position: relative;
   overflow: hidden;
   min-height: 180px;
+  width: 100%;
 }
 
 .mission-item:hover {
@@ -536,15 +535,8 @@ body, html {
 }
 
 /* Responsive mejorado */
-@media (max-width: 1600px) {
+@media (max-width: 1800px) {
   .dashboard-background {
-    max-width: 95%;
-  }
-  
-  .stats-section,
-  .missions-section,
-  .user-section,
-  .dashboard-header {
     max-width: 95%;
   }
 }
