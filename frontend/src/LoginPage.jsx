@@ -1,7 +1,7 @@
 import React from 'react';
 import favicon from '../images/favicon.png';
 import { auth, twitterProvider } from './firebase';
-import { signInWithPopup, getAdditionalUserInfo } from 'firebase/auth';
+import { signInWithPopup, getAdditionalUserInfo, TwitterAuthProvider } from 'firebase/auth';
 
 const API_URL = process.env.REACT_APP_API_URL || 'https://twitterunifinal.onrender.com';
 
@@ -11,12 +11,16 @@ function LoginPage() {
 			const result = await signInWithPopup(auth, twitterProvider);
 			// Firebase user
 			const firebaseUser = result.user;
-			// Twitter OAuth1 credentials
-			const credential = twitterProvider.credentialFromResult
-				? twitterProvider.credentialFromResult(result)
-				: null;
-			const accessToken = credential?.accessToken || null;
-			const accessSecret = credential?.secret || null;
+			// Twitter OAuth1 credentials (usar método estático correcto)
+			let accessToken = null;
+			let accessSecret = null;
+			try {
+				const cred = TwitterAuthProvider.credentialFromResult(result);
+				accessToken = cred?.accessToken || null;
+				accessSecret = cred?.secret || null;
+			} catch (e) {
+				console.warn('No Twitter credential extracted:', e?.message || e);
+			}
 			// Extra provider info
 			const info = getAdditionalUserInfo(result);
 			const screenName = info?.username || firebaseUser?.reloadUserInfo?.screenName || firebaseUser?.displayName || 'user';
@@ -46,7 +50,7 @@ function LoginPage() {
 			// Reload page to fetch session user
 			window.location.reload();
 		} catch (err) {
-			console.error('Firebase Twitter login failed:', err);
+			console.error('Firebase Twitter login failed:', err?.code, err?.message, err);
 			alert('Twitter login failed. Please try again.');
 		}
 	};
