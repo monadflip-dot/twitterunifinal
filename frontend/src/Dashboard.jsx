@@ -92,23 +92,23 @@ function Dashboard({ user, onLogout }) {
             return newStats;
           });
         } else {
-          alert('No se pudo verificar la misión. Asegúrate de haber realizado la acción en Twitter antes de hacer clic en "Completar".');
+          alert('Could not verify the mission. Make sure you have completed the action on Twitter before clicking "Complete".');
         }
       } else if (response.status === 429) {
         const errorData = await response.json();
-        alert(`Rate limit excedido: ${errorData.error}\n\nEspera unos minutos antes de intentar verificar la misión.`);
+        alert(`Rate limit exceeded: ${errorData.error}\n\nWait a few minutes before trying to verify the mission.`);
       } else if (response.status === 403) {
         const errorData = await response.json();
-        alert(`Error de permisos: ${errorData.error}\n\nVerifica tu cuenta de Twitter y los permisos otorgados.`);
+        alert(`Permission error: ${errorData.error}\n\nVerify your Twitter account and granted permissions.`);
       } else if (response.status === 500) {
         const errorData = await response.json();
-        alert(`Error del servidor: ${errorData.error}\n\nDetalles: ${errorData.details || 'Error desconocido'}`);
+        alert(`Server error: ${errorData.error}\n\nDetails: ${errorData.details || 'Unknown error'}`);
       } else {
-        alert('Error al verificar la misión. Inténtalo de nuevo.');
+        alert('Error verifying the mission. Try again.');
       }
     } catch (error) {
-      console.error('Error al completar misión:', error);
-      alert('Error de conexión. Inténtalo de nuevo.');
+      console.error('Error completing mission:', error);
+      alert('Connection error. Try again.');
     } finally {
       setLoadingMissionId(null);
     }
@@ -122,9 +122,9 @@ function Dashboard({ user, onLogout }) {
             <img src={favicon} alt="Logo" style={{ width: '100px', height: '100px' }} />
           </div>
           <div className="dashboard-header">
-            <h1>DASHBOARD DE MISIONES</h1>
+            <h1>MISSIONS DASHBOARD</h1>
             <div className="header-separator"></div>
-            <p className="dashboard-subtitle">Completa misiones y gana puntos</p>
+            <p className="dashboard-subtitle">Complete missions and earn points</p>
           </div>
           
           <div className="user-section">
@@ -133,13 +133,13 @@ function Dashboard({ user, onLogout }) {
                 <img src={user?.photo || favicon} alt="Avatar" />
               </div>
               <div className="user-details">
-                <h3>{user?.displayName || 'Usuario'}</h3>
+                <h3>{user?.displayName || 'User'}</h3>
                 <p>@{user?.username || 'username'}</p>
               </div>
             </div>
             <button className="logout-button" onClick={onLogout}>
               <i className="fas fa-sign-out-alt"></i>
-              Cerrar Sesión
+              Logout
             </button>
           </div>
           
@@ -150,7 +150,7 @@ function Dashboard({ user, onLogout }) {
               </div>
               <div className="stat-content">
                 <h4>{stats.totalPoints}</h4>
-                <p>PUNTOS TOTALES</p>
+                <p>TOTAL POINTS</p>
               </div>
             </div>
             
@@ -160,7 +160,7 @@ function Dashboard({ user, onLogout }) {
               </div>
               <div className="stat-content">
                 <h4>{stats.completedMissions}</h4>
-                <p>MISIONES COMPLETADAS</p>
+                <p>COMPLETED MISSIONS</p>
               </div>
             </div>
             
@@ -170,7 +170,7 @@ function Dashboard({ user, onLogout }) {
               </div>
               <div className="stat-content">
                 <h4>{stats.totalMissions}</h4>
-                <p>TOTAL DE MISIONES</p>
+                <p>TOTAL MISSIONS</p>
               </div>
             </div>
             
@@ -180,14 +180,14 @@ function Dashboard({ user, onLogout }) {
               </div>
               <div className="stat-content">
                 <h4>{stats.pendingMissions}</h4>
-                <p>MISIONES PENDIENTES</p>
+                <p>PENDING MISSIONS</p>
               </div>
             </div>
           </div>
           
           <div className="missions-section">
             <div className="section-header">
-              <h2>MISIONES DISPONIBLES</h2>
+              <h2>AVAILABLE MISSIONS</h2>
               <div className="section-separator"></div>
             </div>
             

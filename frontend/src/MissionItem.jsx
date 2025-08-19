@@ -4,39 +4,29 @@ function MissionItem({ mission, onComplete, loadingMissionId }) {
   const [started, setStarted] = useState(false);
   const getMissionIcon = (type) => {
     switch (type) {
-      case 'like':
-        return 'fas fa-heart';
-      case 'retweet':
-        return 'fas fa-retweet';
-      case 'comment':
-        return 'fas fa-comment';
-      case 'follow':
-        return 'fas fa-user-plus';
-      default:
-        return 'fas fa-star';
+      case 'like': return 'fas fa-heart';
+      case 'retweet': return 'fas fa-retweet';
+      case 'comment': return 'fas fa-comment';
+      case 'follow': return 'fas fa-user-plus';
+      default: return 'fas fa-question';
     }
   };
 
   const getMissionTypeLabel = (type) => {
     switch (type) {
-      case 'like':
-        return 'Dar Like';
-      case 'retweet':
-        return 'Hacer Retweet';
-      case 'comment':
-        return 'Comentar';
-      case 'follow':
-        return 'Seguir Usuario';
-      default:
-        return 'Completar Misión';
+      case 'like': return 'Like Tweet';
+      case 'retweet': return 'Retweet';
+      case 'comment': return 'Comment';
+      case 'follow': return 'Follow User';
+      default: return 'Unknown';
     }
   };
 
   const getStatusTag = (completed) => {
     if (completed) {
-      return { text: 'COMPLETADA', class: 'status-completed' };
+      return { text: 'COMPLETED', class: 'status-completed' };
     }
-    return { text: 'NUEVA', class: 'status-new' };
+    return { text: 'NEW', class: 'status-new' };
   };
 
   const handleButtonClick = () => {
@@ -94,13 +84,13 @@ function MissionItem({ mission, onComplete, loadingMissionId }) {
             onClick={handleButtonClick}
             disabled={mission.completed || loadingMissionId === mission.id}
           >
-            {mission.completed ? 'Completada' : 
+            {mission.completed ? 'Completed' : 
              loadingMissionId === mission.id ? (
                <span>
-                 <i className="fas fa-spinner fa-spin"></i> Verificando...
+                 <i className="fas fa-spinner fa-spin"></i> Verifying...
                </span>
              ) : (
-               started ? 'Completar Misión' : 'Empezar Misión'
+               started ? 'Complete Mission' : 'Start Mission'
              )
             }
           </button>

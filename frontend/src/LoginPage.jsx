@@ -18,36 +18,15 @@ function LoginPage() {
           </div>
           
           <div className="login-content">
-            <div className="login-icon">
-              <div className="icon-circle">
-                <img src={favicon} alt="Logo" style={{ width: '50px', height: '50px' }} />
-              </div>
+            <div className="icon-circle">
+              <img src={favicon} alt="Logo" style={{ width: '50px', height: '50px' }} />
             </div>
-            
-            <div className="login-text">
-              <h2>Completa Misiones</h2>
-              <p>Conecta tu cuenta de Twitter y completa misiones para ganar puntos. ¡Demuestra tu actividad en la red social!</p>
-            </div>
-            
-            <button className="login-button" onClick={handleTwitterLogin}>
+            <h1>Twitter Missions</h1>
+            <p className="login-subtitle">Complete missions and earn points on Twitter</p>
+            <button className="twitter-login-btn" onClick={handleTwitterLogin}>
               <i className="fab fa-twitter"></i>
-              Conectar con Twitter
+              Login with Twitter
             </button>
-            
-            <div className="login-features">
-              <div className="feature-item">
-                <i className="fas fa-heart"></i>
-                <span>Dar Likes</span>
-              </div>
-              <div className="feature-item">
-                <i className="fas fa-retweet"></i>
-                <span>Hacer Retweets</span>
-              </div>
-              <div className="feature-item">
-                <i className="fas fa-comment"></i>
-                <span>Comentar</span>
-              </div>
-            </div>
           </div>
         </div>
       </div>

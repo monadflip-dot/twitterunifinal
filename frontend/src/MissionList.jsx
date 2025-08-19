@@ -5,7 +5,7 @@ function MissionList({ missions, onMissionComplete, loadingMissionId }) {
   if (!missions || missions.length === 0) {
     return (
       <div className="no-missions">
-        <p>No hay misiones disponibles en este momento.</p>
+        <p>No missions available at this time.</p>
       </div>
     );
   }

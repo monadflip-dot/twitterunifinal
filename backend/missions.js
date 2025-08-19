@@ -2,20 +2,20 @@ const express = require('express');
 const { TwitterApi } = require('twitter-api-v2');
 const router = express.Router();
 
-// Middleware para proteger rutas (usando JWT en lugar de sesiones)
+// Middleware to protect routes (using JWT instead of sessions)
 function ensureAuthenticated(req, res, next) {
   if (req.user) {
     return next();
   }
-  res.status(401).json({ error: 'No autenticado' });
+  res.status(401).json({ error: 'Not authenticated' });
 }
 
-// Misiones específicas con la publicación de ABSPFC
+// Specific missions with ABSPFC publication
 const exampleMissions = [
   {
     id: 1, 
     type: 'like', 
-    description: 'Dale like al tweet de ABSPFC sobre el partido', 
+    description: 'Like the ABSPFC tweet about the match', 
     tweetId: '1957149650118377661', 
     points: 50,
     completed: false
@@ -23,7 +23,7 @@ const exampleMissions = [
   { 
     id: 2, 
     type: 'retweet', 
-    description: 'Haz retweet al tweet de ABSPFC', 
+    description: 'Retweet the ABSPFC tweet', 
     tweetId: '1957149650118377661', 
     points: 75,
     completed: false
@@ -31,7 +31,7 @@ const exampleMissions = [
   { 
     id: 3, 
     type: 'comment', 
-    description: 'Comenta en el tweet de ABSPFC', 
+    description: 'Comment on the ABSPFC tweet', 
     tweetId: '1957149650118377661', 
     points: 100,
     completed: false
@@ -39,7 +39,7 @@ const exampleMissions = [
   {
     id: 4,
     type: 'follow',
-    description: 'Sigue la cuenta oficial de ABSPFC en Twitter',
+    description: 'Follow the official ABSPFC account on Twitter',
     targetUserId: 'ABSPFC',
     points: 150,
     completed: false
@@ -76,7 +76,7 @@ async function retryWithBackoff(fn, maxRetries = 2, baseDelay = 1000) {
 router.post('/:id/complete', ensureAuthenticated, async (req, res) => {
   const missionId = parseInt(req.params.id, 10);
   const mission = exampleMissions.find(m => m.id === missionId);
-  if (!mission) return res.status(404).json({ error: 'Misión no encontrada' });
+  if (!mission) return res.status(404).json({ error: 'Mission not found' });
 
   const { accessToken, id: userId } = req.user;
   
@@ -90,10 +90,10 @@ router.post('/:id/complete', ensureAuthenticated, async (req, res) => {
         const likeResponse = await retryWithBackoff(async () => {
           return await client.v2.like(userId, mission.tweetId);
         });
-        console.log('Like exitoso con retry:', likeResponse);
+        console.log('Like successful with retry:', likeResponse);
         return res.json({ success: true, missionId, type: 'like', points: mission.points, method: 'direct' });
       } catch (error) {
-        console.log('Like directo falló, intentando verificación por lectura...');
+        console.log('Direct like failed, attempting verification by reading...');
         
         // ESTRATEGIA 2: Verificar si ya dio like (endpoint diferente)
         try {
@@ -106,11 +106,11 @@ router.post('/:id/complete', ensureAuthenticated, async (req, res) => {
             return res.json({ success: true, missionId, type: 'like', points: mission.points, method: 'verification' });
           }
         } catch (verificationError) {
-          console.log('Verificación por lectura también falló:', verificationError.code);
+          console.log('Verification by reading also failed:', verificationError.code);
         }
         
         // ESTRATEGIA 3: Permitir verificación manual como último recurso
-        console.log('Enviando respuesta manual fallback para like:', {
+        console.log('Sending manual fallback response for like:', {
           success: true,
           missionId,
           type: 'like',
@@ -122,7 +122,7 @@ router.post('/:id/complete', ensureAuthenticated, async (req, res) => {
           type: 'like', 
           points: mission.points, 
           method: 'manual_fallback',
-          message: 'Verificación manual debido a limitaciones de API'
+          message: 'Manual verification due to API limitations'
         });
       }
     }
@@ -132,10 +132,10 @@ router.post('/:id/complete', ensureAuthenticated, async (req, res) => {
         const retweetResponse = await retryWithBackoff(async () => {
           return await client.v2.retweet(userId, mission.tweetId);
         });
-        console.log('Retweet exitoso con retry:', retweetResponse);
+        console.log('Retweet successful with retry:', retweetResponse);
         return res.json({ success: true, missionId, type: 'retweet', points: mission.points, method: 'direct' });
       } catch (error) {
-        console.log('Retweet directo falló, intentando verificación por lectura...');
+        console.log('Direct retweet failed, attempting verification by reading...');
         
         try {
           const retweets = await retryWithBackoff(async () => {
@@ -149,7 +149,7 @@ router.post('/:id/complete', ensureAuthenticated, async (req, res) => {
             return res.json({ success: true, missionId, type: 'retweet', points: mission.points, method: 'verification' });
           }
         } catch (verificationError) {
-          console.log('Verificación por lectura también falló:', verificationError.code);
+          console.log('Verification by reading also failed:', verificationError.code);
         }
         
         return res.json({ 
@@ -158,7 +158,7 @@ router.post('/:id/complete', ensureAuthenticated, async (req, res) => {
           type: 'retweet', 
           points: mission.points, 
           method: 'manual_fallback',
-          message: 'Verificación manual debido a limitaciones de API'
+          message: 'Manual verification due to API limitations'
         });
       }
     }
@@ -169,17 +169,17 @@ router.post('/:id/complete', ensureAuthenticated, async (req, res) => {
         const replyResponse = await retryWithBackoff(async () => {
           return await client.v2.reply(commentText, userId, mission.tweetId);
         });
-        console.log('Comentario exitoso con retry:', replyResponse);
+        console.log('Comment successful with retry:', replyResponse);
         return res.json({ success: true, missionId, type: 'comment', points: mission.points, method: 'direct' });
       } catch (error) {
-        console.log('Comentario directo falló, permitiendo verificación manual...');
+        console.log('Direct comment failed, allowing manual verification...');
         return res.json({ 
           success: true, 
           missionId, 
           type: 'comment', 
           points: mission.points, 
           method: 'manual_fallback',
-          message: 'Verificación manual debido a limitaciones de API'
+          message: 'Manual verification due to API limitations'
         });
       }
     }
@@ -189,24 +189,24 @@ router.post('/:id/complete', ensureAuthenticated, async (req, res) => {
         const followResponse = await retryWithBackoff(async () => {
           return await client.v2.follow(userId, mission.targetUserId);
         });
-        console.log('Follow exitoso con retry:', followResponse);
+        console.log('Follow successful with retry:', followResponse);
         return res.json({ success: true, missionId, type: 'follow', points: mission.points, method: 'direct' });
       } catch (error) {
-        console.log('Follow directo falló, permitiendo verificación manual...');
+        console.log('Direct follow failed, allowing manual verification...');
         return res.json({ 
           success: true, 
           missionId, 
           type: 'follow', 
           points: mission.points, 
           method: 'manual_fallback',
-          message: 'Verificación manual debido a limitaciones de API'
+          message: 'Manual verification due to API limitations'
         });
       }
     }
     
-    return res.status(400).json({ error: 'Tipo de misión no soportado' });
+    return res.status(400).json({ error: 'Mission type not supported' });
   } catch (err) {
-    console.error('Error crítico ejecutando misión:', err);
+    console.error('Critical error executing mission:', err);
     
     // Si la acción ya fue realizada, marcar como exitosa
     if (err.code === 139 || err.message.includes('already') || err.message.includes('duplicate')) {
@@ -215,12 +215,12 @@ router.post('/:id/complete', ensureAuthenticated, async (req, res) => {
         missionId, 
         type: mission.type, 
         points: mission.points,
-        message: 'Acción ya realizada anteriormente'
+        message: 'Action already performed previously'
       });
     }
     
     return res.status(500).json({ 
-      error: 'Error crítico del servidor',
+      error: 'Critical server error',
       details: err.message,
       code: err.code
     });
