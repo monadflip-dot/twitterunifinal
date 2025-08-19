@@ -4,6 +4,7 @@ const cors = require('cors');
 const passport = require('./auth');
 const missionsRouter = require('./missions');
 const session = require('express-session');
+const path = require('path');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -82,6 +83,19 @@ app.get('/api/user', authenticateJWT, (req, res) => {
 // Health check
 app.get('/health', (req, res) => {
   res.json({ status: 'OK', timestamp: new Date().toISOString() });
+});
+
+// Serve frontend static files
+app.use(express.static(path.join(__dirname, '../frontend/dist')));
+
+// Root route - redirect to frontend
+app.get('/', (req, res) => {
+  res.redirect(process.env.FRONTEND_URL || 'http://localhost:3000');
+});
+
+// Catch-all route for SPA - serve frontend index.html
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, '../frontend/dist/index.html'));
 });
 
 app.listen(PORT, () => {
