@@ -13,7 +13,7 @@ passport.use(new OAuth2Strategy({
   clientID: TWITTER_CLIENT_ID,
   clientSecret: TWITTER_CLIENT_SECRET,
   callbackURL: TWITTER_CALLBACK_URL,
-  scope: 'tweet.read users.read like.write like.read retweet.write follows.write offline.access',
+  scope: 'tweet.read users.read like.write like.read retweet.write follows.write',
   state: true,
   pkce: true
 }, async (accessToken, refreshToken, profile, done) => {
