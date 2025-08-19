@@ -110,6 +110,12 @@ router.post('/:id/complete', ensureAuthenticated, async (req, res) => {
         }
         
         // ESTRATEGIA 3: Permitir verificación manual como último recurso
+        console.log('Enviando respuesta manual fallback para like:', {
+          success: true,
+          missionId,
+          type: 'like',
+          points: mission.points
+        });
         return res.json({ 
           success: true, 
           missionId, 

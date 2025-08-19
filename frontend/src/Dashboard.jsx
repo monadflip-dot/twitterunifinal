@@ -60,18 +60,37 @@ function Dashboard({ user, onLogout }) {
 
       if (response.ok) {
         const data = await response.json();
+        console.log('Respuesta de la API:', data); // Debug log
+        
         if (data.success) {
           // Misión completada exitosamente
           const mission = missions.find(m => m.id === missionId);
-          setMissions(prev => prev.map(m => m.id === missionId ? { ...m, completed: true } : m));
+          console.log('Misión encontrada:', mission); // Debug log
+          console.log('Puntos de la misión:', mission?.points); // Debug log
+          console.log('Puntos de la respuesta:', data.points); // Debug log
           
-          // Actualizar estadísticas
-          setStats(prev => ({
-            ...prev,
-            totalPoints: prev.totalPoints + (data.points || 0),
-            completedMissions: prev.completedMissions + 1,
-            pendingMissions: Math.max(prev.pendingMissions - 1, 0)
-          }));
+          setMissions(prev => {
+            const newMissions = prev.map(m => m.id === missionId ? { ...m, completed: true } : m);
+            console.log('Misiones antes de actualizar:', prev); // Debug log
+            console.log('Misiones después de actualizar:', newMissions); // Debug log
+            return newMissions;
+          });
+          
+          // Actualizar estadísticas usando los puntos de la misión local
+          const pointsToAdd = mission?.points || 0;
+          console.log('Puntos a agregar:', pointsToAdd); // Debug log
+          console.log('Estadísticas antes de actualizar:', stats); // Debug log
+          
+          setStats(prev => {
+            const newStats = {
+              ...prev,
+              totalPoints: prev.totalPoints + pointsToAdd,
+              completedMissions: prev.completedMissions + 1,
+              pendingMissions: Math.max(prev.pendingMissions - 1, 0)
+            };
+            console.log('Nuevas estadísticas:', newStats); // Debug log
+            return newStats;
+          });
         } else {
           alert('No se pudo verificar la misión. Asegúrate de haber realizado la acción en Twitter antes de hacer clic en "Completar".');
         }
