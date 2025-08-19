@@ -22,7 +22,7 @@ function App() {
       
       if (response.ok) {
         const userData = await response.json();
-        setUser(userData);
+        setUser(userData.user);
         setIsAuthenticated(true);
       } else {
         setIsAuthenticated(false);
