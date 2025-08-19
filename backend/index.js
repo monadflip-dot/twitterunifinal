@@ -68,30 +68,126 @@ const authenticateJWT = (req, res, next) => {
 // Routes
 app.use('/api/missions', authenticateJWT, missionsRouter);
 
-// Twitter OAuth routes
+// Twitter OAuth routes - Direct implementation without Passport
 app.get('/auth/twitter', (req, res) => {
   console.log('🔐 Starting Twitter authentication...');
   console.log('🔑 Client ID:', process.env.TWITTER_CLIENT_ID ? 'Set' : 'Missing');
   console.log('🔑 Client Secret:', process.env.TWITTER_CLIENT_SECRET ? 'Set' : 'Missing');
   console.log('🔗 Callback URL:', process.env.TWITTER_CALLBACK_URL || 'Not set');
   
-  passport.authenticate('oauth2')(req, res);
+  // Generate state for security
+  const state = Math.random().toString(36).substring(2, 15);
+  
+  // Store state in session
+  req.session.oauthState = state;
+  
+  // Build Twitter OAuth URL
+  const authUrl = `https://twitter.com/i/oauth2/authorize?` +
+    `response_type=code&` +
+    `client_id=${process.env.TWITTER_CLIENT_ID}&` +
+    `redirect_uri=${encodeURIComponent(process.env.TWITTER_CALLBACK_URL)}&` +
+    `scope=tweet.read%20users.read%20like.write%20like.read%20retweet.write%20follows.write&` +
+    `state=${state}`;
+  
+  console.log('🔗 Redirecting to:', authUrl);
+  res.redirect(authUrl);
 });
 
-app.get('/auth/twitter/callback', 
-  (req, res, next) => {
-    console.log('📱 Twitter callback received');
-    console.log('Query params:', req.query);
-    console.log('Session:', req.session);
-    
-    passport.authenticate('oauth2', { failureRedirect: '/login' })(req, res, next);
-  },
-  (req, res) => {
-    console.log('✅ Authentication successful, user:', req.user);
-    // Successful authentication, redirect to frontend
-    res.redirect(process.env.FRONTEND_URL || 'http://localhost:3000');
+app.get('/auth/twitter/callback', async (req, res) => {
+  console.log('📱 Twitter callback received');
+  console.log('Query params:', req.query);
+  console.log('Session:', req.session);
+  
+  const { code, state, error } = req.query;
+  
+  // Check for errors
+  if (error) {
+    console.log('❌ Twitter OAuth error:', error);
+    return res.redirect(`${process.env.FRONTEND_URL || 'http://localhost:3000'}?error=${error}`);
   }
-);
+  
+  // Verify state
+  if (state !== req.session.oauthState) {
+    console.log('❌ Invalid state parameter');
+    return res.redirect(`${process.env.FRONTEND_URL || 'http://localhost:3000'}?error=invalid_state`);
+  }
+  
+  try {
+    console.log('🔄 Exchanging code for token...');
+    
+    // Exchange code for access token
+    const tokenResponse = await fetch('https://api.twitter.com/2/oauth2/token', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'Authorization': `Basic ${Buffer.from(`${process.env.TWITTER_CLIENT_ID}:${process.env.TWITTER_CLIENT_SECRET}`).toString('base64')}`
+      },
+      body: new URLSearchParams({
+        grant_type: 'authorization_code',
+        code: code,
+        redirect_uri: process.env.TWITTER_CALLBACK_URL
+      })
+    });
+    
+    if (!tokenResponse.ok) {
+      const errorText = await tokenResponse.text();
+      console.log('❌ Token exchange failed:', tokenResponse.status, errorText);
+      return res.redirect(`${process.env.FRONTEND_URL || 'http://localhost:3000'}?error=token_error`);
+    }
+    
+    const tokenData = await tokenResponse.json();
+    console.log('✅ Token obtained successfully');
+    
+    // Get user info
+    const userResponse = await fetch('https://api.twitter.com/2/users/me?user.fields=id,username,name,profile_image_url', {
+      headers: {
+        'Authorization': `Bearer ${tokenData.access_token}`
+      }
+    });
+    
+    let user;
+    if (userResponse.ok) {
+      const userData = await userResponse.json();
+      user = {
+        id: userData.data.id,
+        username: userData.data.username,
+        displayName: userData.data.name,
+        photo: userData.data.profile_image_url,
+        accessToken: tokenData.access_token
+      };
+    } else {
+      // Fallback user data
+      user = {
+        id: 'twitter_user_' + Date.now(),
+        username: 'twitter_user',
+        displayName: 'Twitter User',
+        photo: null,
+        accessToken: tokenData.access_token
+      };
+    }
+    
+    console.log('✅ User data obtained:', user.username);
+    
+    // Generate JWT
+    const jwt = require('jsonwebtoken');
+    const token = jwt.sign(user, process.env.SESSION_SECRET || 'your-secret-key', { expiresIn: '24h' });
+    
+    // Set JWT cookie and redirect
+    res.cookie('jwt', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 24 * 60 * 60 * 1000 // 24 hours
+    });
+    
+    console.log('✅ Authentication successful, redirecting to frontend');
+    res.redirect(process.env.FRONTEND_URL || 'http://localhost:3000');
+    
+  } catch (error) {
+    console.error('💥 Error in OAuth callback:', error);
+    res.redirect(`${process.env.FRONTEND_URL || 'http://localhost:3000'}?error=callback_error`);
+  }
+});
 
 app.get('/auth/logout', (req, res) => {
   req.logout((err) => {
