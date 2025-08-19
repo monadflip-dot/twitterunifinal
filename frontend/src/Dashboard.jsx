@@ -58,7 +58,12 @@ function Dashboard({ user, onLogout }) {
           );
           
           // Actualizar estadísticas
-          fetchMissions();
+          setStats(prev => ({
+            ...prev,
+            totalPoints: prev.totalPoints + (data.points || 0),
+            completedMissions: prev.completedMissions + 1,
+            pendingMissions: Math.max(prev.pendingMissions - 1, 0)
+          }));
           
           // Mostrar mensaje de éxito
           const mission = missions.find(m => m.id === missionId);

@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
 
 function MissionItem({ mission, onComplete }) {
+  const [started, setStarted] = useState(false);
   const getMissionIcon = (type) => {
     switch (type) {
       case 'like':
@@ -34,10 +35,16 @@ function MissionItem({ mission, onComplete }) {
     return { text: 'NUEVA', class: 'status-new' };
   };
 
-  const handleComplete = () => {
-    if (!mission.completed) {
-      onComplete(mission.id);
+  const handleButtonClick = () => {
+    if (mission.completed) return;
+    if (!started) {
+      if (mission.tweetUrl) {
+        window.open(mission.tweetUrl, '_blank', 'noopener');
+      }
+      setStarted(true);
+      return;
     }
+    onComplete(mission.id);
   };
 
   return (
@@ -87,10 +94,10 @@ function MissionItem({ mission, onComplete }) {
           
           <button 
             className={`mission-button ${mission.completed ? 'completed' : ''}`}
-            onClick={handleComplete}
+            onClick={handleButtonClick}
             disabled={mission.completed}
           >
-            {mission.completed ? 'Completada' : 'Completar Misión'}
+            {mission.completed ? 'Completada' : (started ? 'Completar Misión' : 'Empezar Misión')}
           </button>
         </div>
       </div>
