@@ -75,23 +75,34 @@ app.get('/auth/twitter', (req, res) => {
   console.log('🔑 Client Secret:', process.env.TWITTER_CLIENT_SECRET ? 'Set' : 'Missing');
   console.log('🔗 Callback URL:', process.env.TWITTER_CALLBACK_URL || 'Not set');
   
-  // Generate state for security
+  // Generate state and code verifier for PKCE
   const state = Math.random().toString(36).substring(2, 15);
+  const codeVerifier = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
   
-  // Store state in session
+  // Store both in session
   req.session.oauthState = state;
+  req.session.codeVerifier = codeVerifier;
   
-  // Build Twitter OAuth URL
+  // Build Twitter OAuth URL with PKCE
   const authUrl = `https://twitter.com/i/oauth2/authorize?` +
     `response_type=code&` +
     `client_id=${process.env.TWITTER_CLIENT_ID}&` +
     `redirect_uri=${encodeURIComponent(process.env.TWITTER_CALLBACK_URL)}&` +
     `scope=tweet.read%20users.read%20like.write%20like.read%20retweet.write%20follows.write&` +
-    `state=${state}`;
+    `state=${state}&` +
+    `code_challenge_method=S256&` +
+    `code_challenge=${generateCodeChallenge(codeVerifier)}`;
   
   console.log('🔗 Redirecting to:', authUrl);
   res.redirect(authUrl);
 });
+
+// Helper function to generate PKCE code challenge
+function generateCodeChallenge(verifier) {
+  const crypto = require('crypto');
+  const hash = crypto.createHash('sha256').update(verifier).digest();
+  return hash.toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+}
 
 app.get('/auth/twitter/callback', async (req, res) => {
   console.log('📱 Twitter callback received');
@@ -125,7 +136,8 @@ app.get('/auth/twitter/callback', async (req, res) => {
       body: new URLSearchParams({
         grant_type: 'authorization_code',
         code: code,
-        redirect_uri: process.env.TWITTER_CALLBACK_URL
+        redirect_uri: process.env.TWITTER_CALLBACK_URL,
+        code_verifier: req.session.codeVerifier
       })
     });
     
