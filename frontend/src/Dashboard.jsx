@@ -53,8 +53,16 @@ function Dashboard({ user, onLogout }) {
         const data = await response.json();
         if (data.success) {
           // Misión completada exitosamente
+          const mission = missions.find(m => m.id === missionId);
           setMissions(prev => prev.map(m => m.id === missionId ? { ...m, completed: true } : m));
-          fetchMissions();
+          
+          // Actualizar estadísticas
+          setStats(prev => ({
+            ...prev,
+            totalPoints: prev.totalPoints + (data.points || 0),
+            completedMissions: prev.completedMissions + 1,
+            pendingMissions: Math.max(prev.pendingMissions - 1, 0)
+          }));
         } else {
           alert('No se pudo verificar la misión. Asegúrate de haber realizado la acción en Twitter antes de hacer clic en "Completar".');
         }
