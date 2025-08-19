@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import favicon from '../images/favicon.png';
 import { auth, twitterProvider } from './firebase';
-import { signInWithPopup, getAdditionalUserInfo, TwitterAuthProvider, signInWithRedirect, getRedirectResult } from 'firebase/auth';
+import { getAdditionalUserInfo, TwitterAuthProvider, signInWithRedirect, getRedirectResult, signOut } from 'firebase/auth';
 
 const API_URL = process.env.REACT_APP_API_URL || 'https://twitterunifinal.onrender.com';
 
@@ -22,9 +22,7 @@ function LoginPage() {
 	}, []);
 
 	const handleResult = async (result) => {
-		// Firebase user
 		const firebaseUser = result.user;
-		// Twitter OAuth1 credentials
 		let accessToken = null;
 		let accessSecret = null;
 		try {
@@ -34,14 +32,9 @@ function LoginPage() {
 		} catch (e) {
 			console.warn('No Twitter credential extracted:', e?.message || e);
 		}
-		// Extra provider info
 		const info = getAdditionalUserInfo(result);
 		const screenName = info?.username || firebaseUser?.reloadUserInfo?.screenName || firebaseUser?.displayName || 'user';
-
-		// Firebase ID token
 		const idToken = await firebaseUser.getIdToken();
-
-		// Send to backend to create session (JWT cookie)
 		await fetch(`${API_URL}/auth/firebase`, {
 			method: 'POST',
 			headers: { 'Content-Type': 'application/json' },
@@ -63,17 +56,12 @@ function LoginPage() {
 
 	const handleTwitterLogin = async () => {
 		try {
-			const result = await signInWithPopup(auth, twitterProvider);
-			await handleResult(result);
-			window.location.reload();
+			// Asegurar estado limpio
+			try { await signOut(auth); } catch {}
+			await signInWithRedirect(auth, twitterProvider);
 		} catch (err) {
-			console.error('Firebase Twitter login failed:', err?.code, err?.message);
-			// Fallback a redirect para evitar problemas de cookies/popup
-			try {
-				await signInWithRedirect(auth, twitterProvider);
-			} catch (e) {
-				alert('Twitter login failed. Please try again.');
-			}
+			console.error('Twitter redirect start failed:', err?.code, err?.message);
+			alert('Twitter login failed. Please try again.');
 		}
 	};
 
