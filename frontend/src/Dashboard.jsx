@@ -67,22 +67,7 @@ function Dashboard({ user, onLogout }) {
           
           // Mostrar mensaje de éxito
           const mission = missions.find(m => m.id === missionId);
-          let successMessage = `¡Misión completada! 🎉\n\n`;
-          
-          if (data.method === 'direct') {
-            successMessage += `✅ Acción ejecutada directamente en Twitter\n`;
-          } else if (data.method === 'verification') {
-            successMessage += `✅ Verificación por lectura exitosa\n`;
-          } else if (data.method === 'manual_fallback') {
-            successMessage += `⚠️ ${data.message}\n`;
-          } else if (data.method === 'offline_verification') {
-            successMessage += `✅ Verificación offline exitosa\n`;
-            successMessage += `Confiamos en que completaste la misión en Twitter\n`;
-          } else {
-            successMessage += `✅ Misión completada exitosamente\n`;
-          }
-          
-          successMessage += `\nHas ganado ${mission?.points || 0} puntos!`;
+          const successMessage = `¡Misión completada! 🎉\n\nHas ganado ${mission?.points || 0} puntos!`;
           alert(successMessage);
         } else {
           alert('No se pudo verificar la misión. Asegúrate de haber realizado la acción en Twitter antes de hacer clic en "Completar".');
