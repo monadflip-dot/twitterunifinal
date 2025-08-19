@@ -58,7 +58,8 @@ body, html {
   border: 1px solid #444;
   overflow: hidden;
   width: 100%;
-  max-width: 500px;
+  max-width: 600px;
+  margin: 0 auto;
 }
 
 .login-panel {
@@ -177,6 +178,8 @@ body, html {
 .dashboard-container {
   min-height: 100vh;
   padding: 20px;
+  display: flex;
+  justify-content: center;
 }
 
 .dashboard-background {
@@ -185,7 +188,8 @@ body, html {
   box-shadow: 0 10px 30px rgba(0,0,0,0.5);
   border: 1px solid #444;
   overflow: hidden;
-  max-width: 1400px;
+  width: 100%;
+  max-width: 1600px;
   margin: 0 auto;
 }
 
@@ -193,10 +197,13 @@ body, html {
   padding: 0;
 }
 
+/* Dashboard Header - más ancho y centrado */
 .dashboard-header {
   background: linear-gradient(135deg, #8B4513 0%, #A0522D 100%);
-  padding: 40px;
+  padding: 50px;
   text-align: center;
+  max-width: 1400px;
+  margin: 0 auto;
 }
 
 .dashboard-header h1 {
@@ -213,14 +220,16 @@ body, html {
   font-weight: 400;
 }
 
-/* User Section */
+/* User Section - más ancho y centrado */
 .user-section {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 30px 40px;
+  padding: 40px 50px;
   background: linear-gradient(135deg, #333 0%, #2a2a2a 100%);
   border-bottom: 1px solid #444;
+  max-width: 1400px;
+  margin: 0 auto;
 }
 
 .user-info {
@@ -269,13 +278,15 @@ body, html {
   box-shadow: 0 5px 15px rgba(220, 53, 69, 0.4);
 }
 
-/* Stats Section */
+/* Stats Section - más ancho y centrado */
 .stats-section {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 20px;
-  padding: 30px 40px;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 25px;
+  padding: 40px 50px;
   background: linear-gradient(135deg, #333 0%, #2a2a2a 100%);
+  max-width: 1400px;
+  margin: 0 auto;
 }
 
 .stat-item {
@@ -324,10 +335,12 @@ body, html {
   letter-spacing: 1px;
 }
 
-/* Missions Section */
+/* Missions Section - más ancho y centrado */
 .missions-section {
-  padding: 40px;
+  padding: 50px;
   background: linear-gradient(135deg, #2a2a2a 0%, #1f1f1f 100%);
+  max-width: 1400px;
+  margin: 0 auto;
 }
 
 .section-header {
@@ -349,23 +362,26 @@ body, html {
   margin: 0 auto;
 }
 
-/* Missions List */
+/* Missions List - mejor distribución */
 .missions-list {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 25px;
+  max-width: 1200px;
+  margin: 0 auto;
 }
 
 .mission-item {
   background: linear-gradient(135deg, #444 0%, #3a3a3a 100%);
   border: 1px solid #555;
-  border-radius: 10px;
-  padding: 25px;
+  border-radius: 12px;
+  padding: 30px;
   display: flex;
-  gap: 20px;
+  gap: 25px;
   transition: all 0.3s ease;
   position: relative;
   overflow: hidden;
+  min-height: 180px;
 }
 
 .mission-item:hover {
@@ -519,7 +535,39 @@ body, html {
   font-size: 18px;
 }
 
-/* Responsive */
+/* Responsive mejorado */
+@media (max-width: 1600px) {
+  .dashboard-background {
+    max-width: 95%;
+  }
+  
+  .stats-section,
+  .missions-section,
+  .user-section,
+  .dashboard-header {
+    max-width: 95%;
+  }
+}
+
+@media (max-width: 1200px) {
+  .stats-section {
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    padding: 30px 40px;
+  }
+  
+  .missions-section {
+    padding: 40px;
+  }
+  
+  .user-section {
+    padding: 30px 40px;
+  }
+  
+  .dashboard-header {
+    padding: 40px;
+  }
+}
+
 @media (max-width: 768px) {
   .dashboard-container {
     padding: 10px;
@@ -553,6 +601,7 @@ body, html {
   .mission-item {
     flex-direction: column;
     text-align: center;
+    padding: 25px;
   }
   
   .mission-footer {
@@ -574,5 +623,12 @@ body, html {
   .login-background,
   .dashboard-background {
     border-radius: 10px;
+  }
+  
+  .stats-section,
+  .missions-section,
+  .user-section,
+  .dashboard-header {
+    padding: 20px;
   }
 }
