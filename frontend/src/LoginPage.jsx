@@ -1,4 +1,5 @@
 import React from 'react';
+import favicon from '../images/favicon.png';
 
 const API_URL = process.env.REACT_APP_API_URL || 'https://twitterunifinal.onrender.com';
 
@@ -19,7 +20,7 @@ function LoginPage() {
           <div className="login-content">
             <div className="login-icon">
               <div className="icon-circle">
-                <img src={require('../images/favicon.png')} alt="Logo" style={{ width: '50px', height: '50px' }} />
+                <img src={favicon} alt="Logo" style={{ width: '50px', height: '50px' }} />
               </div>
             </div>
             

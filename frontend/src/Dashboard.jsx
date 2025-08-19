@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import MissionList from './MissionList';
+import favicon from '../images/favicon.png';
 
 const API_URL = process.env.REACT_APP_API_URL || 'https://twitterunifinal.onrender.com';
 
@@ -76,7 +77,7 @@ function Dashboard({ user, onLogout }) {
       <div className="dashboard-background">
         <div className="dashboard-panel">
           <div style={{ display: 'flex', justifyContent: 'center', marginTop: '20px' }}>
-            <img src={require('../images/favicon.png')} alt="Logo" style={{ width: '50px', height: '50px' }} />
+            <img src={favicon} alt="Logo" style={{ width: '50px', height: '50px' }} />
           </div>
           <div className="dashboard-header">
             <h1>DASHBOARD DE MISIONES</h1>
