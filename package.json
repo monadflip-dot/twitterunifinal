@@ -4,7 +4,7 @@
   "description": "Twitter Missions - Frontend y Backend unificados",
   "scripts": {
     "build": "npm run build:frontend && cd backend && npm install",
-    "build:frontend": "cd frontend && npm install && npm run build",
+    "build:frontend": "cd frontend && npm install --include=dev && npm run build",
     "start": "cd backend && npm install --omit=dev --no-audit --no-fund --silent && node index.js",
     "dev:frontend": "cd frontend && npm run dev",
     "dev:backend": "cd backend && npm start",
