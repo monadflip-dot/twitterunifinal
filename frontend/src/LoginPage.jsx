@@ -19,7 +19,7 @@ function LoginPage() {
           <div className="login-content">
             <div className="login-icon">
               <div className="icon-circle">
-                <i className="fab fa-twitter"></i>
+                <img src={require('../images/favicon.png')} alt="Logo" style={{ width: '50px', height: '50px' }} />
               </div>
             </div>
             

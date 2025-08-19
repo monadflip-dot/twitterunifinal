@@ -75,6 +75,9 @@ function Dashboard({ user, onLogout }) {
     <div className="dashboard-container">
       <div className="dashboard-background">
         <div className="dashboard-panel">
+          <div style={{ display: 'flex', justifyContent: 'center', marginTop: '20px' }}>
+            <img src={require('../images/favicon.png')} alt="Logo" style={{ width: '50px', height: '50px' }} />
+          </div>
           <div className="dashboard-header">
             <h1>DASHBOARD DE MISIONES</h1>
             <div className="header-separator"></div>
@@ -84,10 +87,10 @@ function Dashboard({ user, onLogout }) {
           <div className="user-section">
             <div className="user-info">
               <div className="user-avatar">
-                <img src={user?.profile_image_url || '/default-avatar.png'} alt="Avatar" />
+                <img src={user?.photo || '/default-avatar.png'} alt="Avatar" />
               </div>
               <div className="user-details">
-                <h3>{user?.name || 'Usuario'}</h3>
+                <h3>{user?.displayName || 'Usuario'}</h3>
                 <p>@{user?.username || 'username'}</p>
               </div>
             </div>
