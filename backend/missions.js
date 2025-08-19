@@ -66,42 +66,30 @@ router.post('/:id/complete', ensureAuthenticated, async (req, res) => {
     if (mission.type === 'like') {
       // Intentar dar like al tweet
       const likeResponse = await client.v2.like(userId, mission.tweetId);
-      if (likeResponse.data && likeResponse.data.liked) {
-        return res.json({ success: true, missionId, type: 'like', points: mission.points });
-      } else {
-        return res.json({ success: false, message: 'No se pudo dar like al tweet' });
-      }
+      console.log('Like response:', likeResponse);
+      return res.json({ success: true, missionId, type: 'like', points: mission.points });
     }
     
     if (mission.type === 'retweet') {
       // Intentar hacer retweet
       const retweetResponse = await client.v2.retweet(userId, mission.tweetId);
-      if (retweetResponse.data && retweetResponse.data.retweeted) {
-        return res.json({ success: true, missionId, type: 'retweet', points: mission.points });
-      } else {
-        return res.json({ success: false, message: 'No se pudo hacer retweet' });
-      }
+      console.log('Retweet response:', retweetResponse);
+      return res.json({ success: true, missionId, type: 'retweet', points: mission.points });
     }
     
     if (mission.type === 'comment') {
-      // Para comentarios, necesitamos crear un tweet como respuesta
+      // Para comentarios, crear un tweet como respuesta
       const commentText = `¡Excelente contenido! #ABSPFC`;
       const replyResponse = await client.v2.reply(commentText, userId, mission.tweetId);
-      if (replyResponse.data && replyResponse.data.id) {
-        return res.json({ success: true, missionId, type: 'comment', points: mission.points });
-      } else {
-        return res.json({ success: false, message: 'No se pudo comentar en el tweet' });
-      }
+      console.log('Reply response:', replyResponse);
+      return res.json({ success: true, missionId, type: 'comment', points: mission.points });
     }
     
     if (mission.type === 'follow') {
       // Intentar seguir al usuario objetivo
       const followResponse = await client.v2.follow(userId, mission.targetUserId);
-      if (followResponse.data && followResponse.data.following) {
-        return res.json({ success: true, missionId, type: 'follow', points: mission.points });
-      } else {
-        return res.json({ success: false, message: 'No se pudo seguir al usuario' });
-      }
+      console.log('Follow response:', followResponse);
+      return res.json({ success: true, missionId, type: 'follow', points: mission.points });
     }
     
     return res.status(400).json({ error: 'Tipo de misión no soportado' });
@@ -109,7 +97,7 @@ router.post('/:id/complete', ensureAuthenticated, async (req, res) => {
     console.error('Error ejecutando misión:', err);
     
     // Si la acción ya fue realizada, marcar como exitosa
-    if (err.code === 139 && err.message.includes('already')) {
+    if (err.code === 139 || err.message.includes('already') || err.message.includes('duplicate')) {
       return res.json({ 
         success: true, 
         missionId, 
@@ -119,7 +107,27 @@ router.post('/:id/complete', ensureAuthenticated, async (req, res) => {
       });
     }
     
-    return res.status(500).json({ error: 'Error ejecutando la acción en Twitter' });
+    // Si es un error de permisos o autenticación
+    if (err.code === 403 || err.code === 401) {
+      return res.status(403).json({ 
+        error: 'No tienes permisos para realizar esta acción. Verifica tu cuenta de Twitter.',
+        code: err.code
+      });
+    }
+    
+    // Si es un error de rate limit
+    if (err.code === 429) {
+      return res.status(429).json({ 
+        error: 'Rate limit excedido. Espera unos minutos antes de intentar verificar la misión.',
+        retryAfter: err.rateLimit?.reset || Date.now() + 900000
+      });
+    }
+    
+    return res.status(500).json({ 
+      error: 'Error ejecutando la acción en Twitter',
+      details: err.message,
+      code: err.code
+    });
   }
 });
 

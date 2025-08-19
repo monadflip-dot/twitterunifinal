@@ -77,6 +77,12 @@ function Dashboard({ user, onLogout }) {
       } else if (response.status === 429) {
         const errorData = await response.json();
         alert(`Rate limit excedido: ${errorData.error}\n\nEspera unos minutos antes de intentar verificar la misión.`);
+      } else if (response.status === 403) {
+        const errorData = await response.json();
+        alert(`Error de permisos: ${errorData.error}\n\nVerifica tu cuenta de Twitter y los permisos otorgados.`);
+      } else if (response.status === 500) {
+        const errorData = await response.json();
+        alert(`Error del servidor: ${errorData.error}\n\nDetalles: ${errorData.details || 'Error desconocido'}`);
       } else {
         alert('Error al verificar la misión. Inténtalo de nuevo.');
       }
