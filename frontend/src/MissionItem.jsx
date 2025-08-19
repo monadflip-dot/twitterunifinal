@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 
-function MissionItem({ mission, onComplete }) {
+function MissionItem({ mission, onComplete, loadingMissionId }) {
   const [started, setStarted] = useState(false);
   const getMissionIcon = (type) => {
     switch (type) {
@@ -89,12 +89,20 @@ function MissionItem({ mission, onComplete }) {
             +{mission.points} pts
           </div>
           
-          <button 
+          <button
             className={`mission-button ${mission.completed ? 'completed' : ''}`}
             onClick={handleButtonClick}
-            disabled={mission.completed}
+            disabled={mission.completed || loadingMissionId === mission.id}
           >
-            {mission.completed ? 'Completada' : (started ? 'Completar Misión' : 'Empezar Misión')}
+            {mission.completed ? 'Completada' : 
+             loadingMissionId === mission.id ? (
+               <span>
+                 <i className="fas fa-spinner fa-spin"></i> Verificando...
+               </span>
+             ) : (
+               started ? 'Completar Misión' : 'Empezar Misión'
+             )
+            }
           </button>
         </div>
       </div>

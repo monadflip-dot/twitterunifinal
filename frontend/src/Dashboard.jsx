@@ -12,6 +12,8 @@ function Dashboard({ user, onLogout }) {
     totalMissions: 0,
     pendingMissions: 0
   });
+  const [loading, setLoading] = useState(false);
+  const [loadingMissionId, setLoadingMissionId] = useState(null);
 
   useEffect(() => {
     fetchMissions();
@@ -43,12 +45,19 @@ function Dashboard({ user, onLogout }) {
   };
 
   const handleMissionComplete = async (missionId) => {
+    if (loadingMissionId === missionId) return; // Evitar múltiples clicks
+    
+    setLoadingMissionId(missionId);
+    
     try {
-      const response = await fetch(`${API_URL}/api/missions/${missionId}/complete`, {
+      // Simular delay de lectura/verificación
+      await new Promise(resolve => setTimeout(resolve, 5000));
+      
+      const response = await fetch(`${process.env.REACT_APP_API_URL}/api/missions/${missionId}/complete`, {
         method: 'POST',
         credentials: 'include'
       });
-      
+
       if (response.ok) {
         const data = await response.json();
         if (data.success) {
@@ -79,8 +88,10 @@ function Dashboard({ user, onLogout }) {
         alert('Error al verificar la misión. Inténtalo de nuevo.');
       }
     } catch (error) {
-      console.error('Error verificando misión:', error);
-      alert('Error de conexión. Verifica tu internet e inténtalo de nuevo.');
+      console.error('Error al completar misión:', error);
+      alert('Error de conexión. Inténtalo de nuevo.');
+    } finally {
+      setLoadingMissionId(null);
     }
   };
 
@@ -164,6 +175,7 @@ function Dashboard({ user, onLogout }) {
             <MissionList 
               missions={missions} 
               onMissionComplete={handleMissionComplete}
+              loadingMissionId={loadingMissionId}
             />
           </div>
         </div>

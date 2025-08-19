@@ -1,7 +1,7 @@
 import React from 'react';
 import MissionItem from './MissionItem';
 
-function MissionList({ missions, onMissionComplete }) {
+function MissionList({ missions, onMissionComplete, loadingMissionId }) {
   if (!missions || missions.length === 0) {
     return (
       <div className="no-missions">
@@ -17,6 +17,7 @@ function MissionList({ missions, onMissionComplete }) {
           key={mission.id}
           mission={mission}
           onComplete={onMissionComplete}
+          loadingMissionId={loadingMissionId}
         />
       ))}
     </div>
