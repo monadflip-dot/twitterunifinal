@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import favicon from '../images/favicon.png';
 import { auth, twitterProvider } from './firebase';
-import { getAdditionalUserInfo, TwitterAuthProvider, signInWithRedirect, getRedirectResult, signOut, onAuthStateChanged } from 'firebase/auth';
+import { getAdditionalUserInfo, TwitterAuthProvider, signInWithRedirect, getRedirectResult, onAuthStateChanged, signInWithPopup } from 'firebase/auth';
 
 const API_URL = process.env.REACT_APP_API_URL || 'https://twitterunifinal.onrender.com';
 
@@ -84,12 +84,23 @@ function LoginPage() {
 
 	const handleTwitterLogin = async () => {
 		try {
-			// Asegurar estado limpio
-			try { await signOut(auth); } catch {}
-			await signInWithRedirect(auth, twitterProvider);
+			// Limpia posibles estados previos de Firebase redirect
+			try {
+				Object.keys(window.localStorage || {}).forEach((k) => {
+					if (k.startsWith('firebase:')) localStorage.removeItem(k);
+				});
+			} catch {}
+			// Popup primero (mejor UX). Si falla, fallback a redirect
+			const result = await signInWithPopup(auth, twitterProvider);
+			await handleResult(result);
+			window.location.reload();
 		} catch (err) {
-			console.error('Twitter redirect start failed:', err?.code, err?.message);
-			alert('Twitter login failed. Please try again.');
+			console.error('Popup login failed, falling back to redirect:', err?.code, err?.message);
+			try {
+				await signInWithRedirect(auth, twitterProvider);
+			} catch (e) {
+				alert('Twitter login failed. Please try again.');
+			}
 		}
 	};
 
