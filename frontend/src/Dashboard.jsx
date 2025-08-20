@@ -58,36 +58,44 @@ function Dashboard({ user, onLogout }) {
     setLoadingMissionId(missionId);
     
     try {
+      console.log(`🚀 Starting mission completion for mission ${missionId}`);
+      
       // Simular delay de lectura/verificación
       await new Promise(resolve => setTimeout(resolve, 5000));
       
       const response = await fetch(`${API_URL}/api/missions/${missionId}/complete`, {
         method: 'POST',
-        credentials: 'include'
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json'
+        }
       });
+
+      console.log(`📡 Response status: ${response.status}`);
+      console.log(`📡 Response headers:`, response.headers);
 
       if (response.ok) {
         const data = await response.json();
-        console.log('Respuesta de la API:', data); // Debug log
+        console.log('✅ Respuesta de la API:', data);
         
         if (data.success) {
           // Misión completada exitosamente
           const mission = missions.find(m => m.id === missionId);
-          console.log('Misión encontrada:', mission); // Debug log
-          console.log('Puntos de la misión:', mission?.points); // Debug log
-          console.log('Puntos de la respuesta:', data.points); // Debug log
+          console.log('✅ Misión encontrada:', mission);
+          console.log('✅ Puntos de la misión:', mission?.points);
+          console.log('✅ Puntos de la respuesta:', data.points);
           
           setMissions(prev => {
             const newMissions = prev.map(m => m.id === missionId ? { ...m, completed: true } : m);
-            console.log('Misiones antes de actualizar:', prev); // Debug log
-            console.log('Misiones después de actualizar:', newMissions); // Debug log
+            console.log('🔄 Misiones antes de actualizar:', prev);
+            console.log('🔄 Misiones después de actualizar:', newMissions);
             return newMissions;
           });
           
           // Actualizar estadísticas usando los puntos de la misión local
           const pointsToAdd = mission?.points || 0;
-          console.log('Puntos a agregar:', pointsToAdd); // Debug log
-          console.log('Estadísticas antes de actualizar:', stats); // Debug log
+          console.log('💰 Puntos a agregar:', pointsToAdd);
+          console.log('📊 Estadísticas antes de actualizar:', stats);
           
           setStats(prev => {
             const newStats = {
@@ -96,9 +104,12 @@ function Dashboard({ user, onLogout }) {
               completedMissions: prev.completedMissions + 1,
               pendingMissions: Math.max(prev.pendingMissions - 1, 0)
             };
-            console.log('Nuevas estadísticas:', newStats); // Debug log
+            console.log('📊 Nuevas estadísticas:', newStats);
             return newStats;
           });
+          
+          // Mostrar mensaje de éxito
+          alert(`¡Misión completada exitosamente! +${pointsToAdd} puntos`);
         } else {
           alert('Could not verify the mission. Make sure you have completed the action on Twitter before clicking "Complete".');
         }
@@ -111,12 +122,27 @@ function Dashboard({ user, onLogout }) {
       } else if (response.status === 500) {
         const errorData = await response.json();
         alert(`Server error: ${errorData.error}\n\nDetails: ${errorData.details || 'Unknown error'}`);
+      } else if (response.status === 502) {
+        alert('Server temporarily unavailable (502 Bad Gateway). This usually means the backend is restarting. Please try again in a few minutes.');
+      } else if (response.status === 503) {
+        alert('Service temporarily unavailable (503). The server is overloaded. Please try again later.');
+      } else if (response.status === 504) {
+        alert('Gateway timeout (504). The request took too long to complete. Please try again.');
       } else {
-        alert('Error verifying the mission. Try again.');
+        const errorText = await response.text();
+        console.error('❌ Unexpected error response:', errorText);
+        alert(`Error verifying the mission (Status: ${response.status}). Try again or contact support if the problem persists.`);
       }
     } catch (error) {
-      console.error('Error completing mission:', error);
-      alert('Connection error. Try again.');
+      console.error('💥 Error completing mission:', error);
+      
+      if (error.name === 'TypeError' && error.message.includes('fetch')) {
+        alert('Connection error: Unable to reach the server. Please check your internet connection and try again.');
+      } else if (error.name === 'AbortError') {
+        alert('Request timeout: The operation took too long. Please try again.');
+      } else {
+        alert(`Connection error: ${error.message}. Try again.`);
+      }
     } finally {
       setLoadingMissionId(null);
     }
