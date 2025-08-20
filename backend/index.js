@@ -19,22 +19,12 @@ const oauthStates = new Map();
 // Middleware
 app.use(cors({
   origin: process.env.FRONTEND_URL || 'https://twitterunifinal.onrender.com',
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'Cookie']
+  credentials: true
 }));
 
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
-
-// Logging middleware
-app.use((req, res, next) => {
-  console.log(`[${new Date().toISOString()}] ${req.method} ${req.path}`);
-  console.log('Headers:', req.headers);
-  console.log('Cookies:', req.cookies);
-  next();
-});
 
 // Session configuration
 app.use(session({
@@ -55,7 +45,6 @@ app.use(passport.session());
 const authenticateJWT = (req, res, next) => {
   console.log('🔐 JWT Middleware executing...');
   console.log('🍪 Cookies received:', req.headers.cookie);
-  console.log('🔑 Authorization header:', req.headers.authorization);
   
   const token = req.cookies?.jwt || req.headers.authorization?.split(' ')[1];
   
@@ -80,26 +69,6 @@ const authenticateJWT = (req, res, next) => {
     return res.status(401).json({ error: 'Invalid token' });
   }
 };
-
-// Health check endpoint (moved up for better monitoring)
-app.get('/health', (req, res) => {
-  res.json({ 
-    status: 'OK', 
-    timestamp: new Date().toISOString(),
-    environment: process.env.NODE_ENV || 'development',
-    port: PORT
-  });
-});
-
-// Test endpoint for debugging
-app.get('/test', (req, res) => {
-  res.json({ 
-    message: 'Backend is working',
-    timestamp: new Date().toISOString(),
-    cookies: req.cookies,
-    headers: req.headers
-  });
-});
 
 // Routes
 app.use('/api/missions', authenticateJWT, missionsRouter);
@@ -372,6 +341,11 @@ app.get('/api/user', authenticateJWT, (req, res) => {
   res.json({ user: req.user });
 });
 
+// Health check
+app.get('/health', (req, res) => {
+  res.json({ status: 'OK', timestamp: new Date().toISOString() });
+});
+
 // Serve frontend static files
 app.use(express.static(path.join(__dirname, '../frontend/dist')));
 
@@ -386,33 +360,5 @@ app.get('*', (req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT}`);
-  console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
-  console.log(`🔗 Frontend URL: ${process.env.FRONTEND_URL || 'https://twitterunifinal.onrender.com'}`);
-  console.log(`🔐 Firebase configured: ${process.env.FIREBASE_SERVICE_ACCOUNT ? 'YES' : 'NO'}`);
-});
-
-// Error handling middleware
-app.use((err, req, res, next) => {
-  console.error('💥 Unhandled error:', err);
-  console.error('Stack trace:', err.stack);
-  
-  // Don't expose internal errors in production
-  const errorMessage = process.env.NODE_ENV === 'production' 
-    ? 'Internal server error' 
-    : err.message;
-  
-  res.status(500).json({ 
-    error: errorMessage,
-    timestamp: new Date().toISOString()
-  });
-});
-
-// 404 handler
-app.use('*', (req, res) => {
-  res.status(404).json({ 
-    error: 'Route not found',
-    path: req.originalUrl,
-    timestamp: new Date().toISOString()
-  });
+  console.log(`Server running on port ${PORT}`);
 });

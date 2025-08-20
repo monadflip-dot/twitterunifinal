@@ -118,42 +118,28 @@ async function retryWithBackoff(fn, maxRetries = 2, baseDelay = 1000) {
 router.post('/:id/complete', ensureAuthenticated, async (req, res) => {
   const missionId = parseInt(req.params.id, 10);
   const mission = exampleMissions.find(m => m.id === missionId);
-  
-  if (!mission) {
-    console.log(`❌ Mission not found: ${missionId}`);
-    return res.status(404).json({ error: 'Mission not found' });
-  }
+  if (!mission) return res.status(404).json({ error: 'Mission not found' });
 
   const { accessToken, id: userId } = req.user;
-  
-  console.log(`🚀 Starting mission completion:`, {
-    missionId,
-    missionType: mission.type,
-    userId,
-    hasAccessToken: !!accessToken
-  });
   
   // Use OAuth 2.0 with access token
   const client = new TwitterApi(accessToken);
 
   try {
     if (mission.type === 'like') {
-      console.log(`❤️ Processing LIKE mission for tweet: ${mission.tweetId}`);
-      
       // STRATEGY 1: Try direct like with retry
       try {
         const likeResponse = await retryWithBackoff(async () => {
           return await client.v2.like(userId, mission.tweetId);
         });
-        console.log('✅ Like successful with retry:', likeResponse);
+        console.log('Like successful with retry:', likeResponse);
         
         // Save to database
         await dbHelpers.completeMission(userId, missionId, mission.points);
-        console.log('✅ Mission saved to database');
         
         return res.json({ success: true, missionId, type: 'like', points: mission.points, method: 'direct' });
       } catch (error) {
-        console.log('⚠️ Direct like failed, attempting verification by reading...', error.message);
+        console.log('Direct like failed, attempting verification by reading...');
         
         // STRATEGY 2: Verify if already liked (different endpoint)
         try {
@@ -163,18 +149,22 @@ router.post('/:id/complete', ensureAuthenticated, async (req, res) => {
           
           const liked = likes.data && likes.data.data && likes.data.data.some(t => t.id === mission.tweetId);
           if (liked) {
-            console.log('✅ Tweet already liked, marking as completed');
             // Save to database
             await dbHelpers.completeMission(userId, missionId, mission.points);
             
             return res.json({ success: true, missionId, type: 'like', points: mission.points, method: 'verification' });
           }
         } catch (verificationError) {
-          console.log('⚠️ Verification by reading also failed:', verificationError.code);
+          console.log('Verification by reading also failed:', verificationError.code);
         }
         
         // STRATEGY 3: Allow manual verification as last resort
-        console.log('🔄 Using manual fallback for like mission');
+        console.log('Sending manual fallback response for like:', {
+          success: true,
+          missionId,
+          type: 'like',
+          points: mission.points
+        });
         
         // Save to database
         await dbHelpers.completeMission(userId, missionId, mission.points);
@@ -191,20 +181,18 @@ router.post('/:id/complete', ensureAuthenticated, async (req, res) => {
     }
     
     if (mission.type === 'retweet') {
-      console.log(`🔄 Processing RETWEET mission for tweet: ${mission.tweetId}`);
-      
       try {
         const retweetResponse = await retryWithBackoff(async () => {
           return await client.v2.retweet(userId, mission.tweetId);
         });
-        console.log('✅ Retweet successful with retry:', retweetResponse);
+        console.log('Retweet successful with retry:', retweetResponse);
         
         // Save to database
         await dbHelpers.completeMission(userId, missionId, mission.points);
         
         return res.json({ success: true, missionId, type: 'retweet', points: mission.points, method: 'direct' });
       } catch (error) {
-        console.log('⚠️ Direct retweet failed, attempting verification by reading...', error.message);
+        console.log('Direct retweet failed, attempting verification by reading...');
         
         try {
           const retweets = await retryWithBackoff(async () => {
@@ -215,17 +203,15 @@ router.post('/:id/complete', ensureAuthenticated, async (req, res) => {
             t.referenced_tweets && t.referenced_tweets.some(ref => ref.type === 'retweeted' && ref.id === mission.tweetId)
           );
           if (retweeted) {
-            console.log('✅ Tweet already retweeted, marking as completed');
             // Save to database
             await dbHelpers.completeMission(userId, missionId, mission.points);
             
             return res.json({ success: true, missionId, type: 'retweet', points: mission.points, method: 'verification' });
           }
         } catch (verificationError) {
-          console.log('⚠️ Verification by reading also failed:', verificationError.code);
+          console.log('Verification by reading also failed:', verificationError.code);
         }
         
-        console.log('🔄 Using manual fallback for retweet mission');
         // Save to database
         await dbHelpers.completeMission(userId, missionId, mission.points);
         
@@ -241,21 +227,19 @@ router.post('/:id/complete', ensureAuthenticated, async (req, res) => {
     }
     
     if (mission.type === 'comment') {
-      console.log(`💬 Processing COMMENT mission for tweet: ${mission.tweetId}`);
-      
       try {
         const commentText = `¡Excelente contenido! #ABSPFC`;
         const replyResponse = await retryWithBackoff(async () => {
           return await client.v2.reply(commentText, userId, mission.tweetId);
         });
-        console.log('✅ Comment successful with retry:', replyResponse);
+        console.log('Comment successful with retry:', replyResponse);
         
         // Save to database
         await dbHelpers.completeMission(userId, missionId, mission.points);
         
         return res.json({ success: true, missionId, type: 'comment', points: mission.points, method: 'direct' });
       } catch (error) {
-        console.log('⚠️ Direct comment failed, allowing manual verification...', error.message);
+        console.log('Direct comment failed, allowing manual verification...');
         
         // Save to database
         await dbHelpers.completeMission(userId, missionId, mission.points);
@@ -272,20 +256,18 @@ router.post('/:id/complete', ensureAuthenticated, async (req, res) => {
     }
     
     if (mission.type === 'follow') {
-      console.log(`👥 Processing FOLLOW mission for user: ${mission.targetUserId}`);
-      
       try {
         const followResponse = await retryWithBackoff(async () => {
           return await client.v2.follow(userId, mission.targetUserId);
         });
-        console.log('✅ Follow successful with retry:', followResponse);
+        console.log('Follow successful with retry:', followResponse);
         
         // Save to database
         await dbHelpers.completeMission(userId, missionId, mission.points);
         
         return res.json({ success: true, missionId, type: 'follow', points: mission.points, method: 'direct' });
       } catch (error) {
-        console.log('⚠️ Direct follow failed, allowing manual verification...', error.message);
+        console.log('Direct follow failed, allowing manual verification...');
         
         // Save to database
         await dbHelpers.completeMission(userId, missionId, mission.points);
@@ -301,19 +283,12 @@ router.post('/:id/complete', ensureAuthenticated, async (req, res) => {
       }
     }
     
-    console.log(`❌ Unsupported mission type: ${mission.type}`);
     return res.status(400).json({ error: 'Mission type not supported' });
   } catch (err) {
-    console.error('💥 Critical error executing mission:', err);
-    console.error('Error details:', {
-      code: err.code,
-      message: err.message,
-      stack: err.stack
-    });
+    console.error('Critical error executing mission:', err);
     
     // If action already performed, mark as successful
     if (err.code === 139 || err.message.includes('already') || err.message.includes('duplicate')) {
-      console.log('✅ Action already performed, marking as successful');
       // Save to database
       await dbHelpers.completeMission(userId, missionId, mission.points);
       
