@@ -176,7 +176,7 @@ body, html {
 
 .login-header {
   background: #f5f5dc;
-  padding: 40px;
+  padding: 25px;
   text-align: center;
   border-bottom: 3px solid #8B4513;
   position: relative;
@@ -194,9 +194,9 @@ body, html {
 
 .login-header h1 {
   color: #2d1810;
-  font-size: 32px;
+  font-size: 24px;
   font-weight: 700;
-  letter-spacing: 3px;
+  letter-spacing: 2px;
   margin-bottom: 15px;
   text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
   font-family: 'Georgia', 'Times New Roman', serif;
@@ -245,10 +245,12 @@ body, html {
 
 .login-subtitle {
   color: #5d4037;
-  font-size: 16px;
+  font-size: 20px;
   line-height: 1.6;
   margin-bottom: 20px;
-  font-style: italic;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
 }
 
 .login-description {

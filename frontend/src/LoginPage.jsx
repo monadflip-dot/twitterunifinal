@@ -110,14 +110,12 @@ function LoginPage() {
 				<div className="login-panel">
 					<div className="login-header">
 						<h1>PENGUIN FISHING CLUB</h1>
-						<div className="header-separator"></div>
 					</div>
 					
 					<div className="login-content">
 						<div className="icon-circle">
 							<img src={favicon} alt="Logo" style={{ width: '50px', height: '50px' }} />
 						</div>
-						<h1>PENGUIN FISHING CLUB</h1>
 						<p className="login-subtitle">whitelist missions</p>
 						<p className="login-description">Complete missions and win whitelist for Penguin fishing club mint.</p>
 						<button className="twitter-login-btn" onClick={handleTwitterLogin}>
