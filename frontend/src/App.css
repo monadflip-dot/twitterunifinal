@@ -296,7 +296,7 @@ body, html {
   box-shadow: 0 10px 30px rgba(0,0,0,0.5);
   overflow: hidden;
   width: 100%;
-  max-width: 900px;
+  max-width: 1200px;
   margin: 40px auto;
   padding: 0;
 }
@@ -311,7 +311,7 @@ body, html {
 /* Dashboard Header */
 .dashboard-header {
   background: #f5f5dc;
-  padding: 50px 60px;
+  padding: 60px 80px;
   text-align: center;
   width: 100%;
   margin: 0;
@@ -331,10 +331,10 @@ body, html {
 
 .dashboard-header h1 {
   color: #2d1810;
-  font-size: 36px;
+  font-size: 42px;
   font-weight: 700;
   letter-spacing: 3px;
-  margin-bottom: 15px;
+  margin-bottom: 20px;
   text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
   font-family: 'Georgia', 'Times New Roman', serif;
   text-transform: uppercase;
@@ -342,7 +342,7 @@ body, html {
 
 .dashboard-subtitle {
   color: #5d4037;
-  font-size: 18px;
+  font-size: 20px;
   font-weight: 400;
   font-style: italic;
   text-shadow: 1px 1px 2px rgba(0,0,0,0.05);
@@ -353,7 +353,7 @@ body, html {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 40px 60px;
+  padding: 50px 80px;
   background: #f5f5dc;
   border-bottom: 2px solid #8B4513;
   width: 100%;
@@ -417,9 +417,9 @@ body, html {
 /* Stats Section */
 .stats-section {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 25px;
-  padding: 50px 60px;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 30px;
+  padding: 60px 80px;
   background: #f5f5dc;
   width: 100%;
   margin: 0;
@@ -428,8 +428,8 @@ body, html {
 .stat-item {
   background: #f5f5dc;
   border: 3px solid #8B4513;
-  border-radius: 12px;
-  padding: 25px;
+  border-radius: 15px;
+  padding: 35px;
   text-align: center;
   transition: all 0.3s ease;
   box-shadow: 0 4px 15px rgba(0,0,0,0.1);
@@ -443,55 +443,55 @@ body, html {
 }
 
 .stat-icon {
-  width: 50px;
-  height: 50px;
+  width: 60px;
+  height: 60px;
   background: #8B4513;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin: 0 auto 15px;
+  margin: 0 auto 20px;
   border: 3px solid #654321;
   box-shadow: 0 4px 15px rgba(0,0,0,0.2);
 }
 
 .stat-icon i {
-  font-size: 20px;
+  font-size: 24px;
   color: white;
 }
 
 /* Iconos específicos para las estadísticas */
 .stat-icon .fa-star {
   color: #FFD700 !important;
-  font-size: 24px;
+  font-size: 28px;
 }
 
 .stat-icon .fa-check-circle {
   color: #32CD32 !important;
-  font-size: 22px;
+  font-size: 26px;
 }
 
 .stat-icon .fa-list {
   color: #87CEEB !important;
-  font-size: 22px;
+  font-size: 26px;
 }
 
 .stat-icon .fa-clock {
   color: #FFA500 !important;
-  font-size: 22px;
+  font-size: 26px;
 }
 
 .stat-content h4 {
   color: #2d1810;
-  font-size: 32px;
+  font-size: 38px;
   font-weight: 700;
-  margin-bottom: 8px;
+  margin-bottom: 12px;
   text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
 }
 
 .stat-content p {
   color: #5d4037;
-  font-size: 14px;
+  font-size: 16px;
   font-weight: 500;
   text-transform: uppercase;
   letter-spacing: 1px;
@@ -500,7 +500,7 @@ body, html {
 
 /* Missions Section */
 .missions-section {
-  padding: 60px;
+  padding: 80px;
   background: #f5f5dc;
   width: 100%;
   margin: 0;
@@ -540,14 +540,14 @@ body, html {
 .mission-item {
   background: #f5f5dc;
   border: 3px solid #8B4513;
-  border-radius: 12px;
-  padding: 30px;
+  border-radius: 15px;
+  padding: 40px;
   display: flex;
-  gap: 25px;
+  gap: 30px;
   transition: all 0.3s ease;
   position: relative;
   overflow: hidden;
-  min-height: 180px;
+  min-height: 200px;
   width: 100%;
   margin: 0;
   box-shadow: 0 4px 15px rgba(0,0,0,0.1);
@@ -567,17 +567,17 @@ body, html {
 .mission-item.completed::before {
   content: '✓';
   position: absolute;
-  top: 10px;
-  right: 15px;
+  top: 15px;
+  right: 20px;
   background: #2d5016;
   color: white;
-  width: 25px;
-  height: 25px;
+  width: 30px;
+  height: 30px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 14px;
+  font-size: 16px;
   font-weight: bold;
   box-shadow: 0 2px 8px rgba(0,0,0,0.2);
 }
@@ -587,8 +587,8 @@ body, html {
 }
 
 .mission-icon .icon-circle {
-  width: 60px;
-  height: 60px;
+  width: 70px;
+  height: 70px;
   background: #8B4513;
   border-radius: 50%;
   display: flex;
@@ -599,7 +599,7 @@ body, html {
 }
 
 .mission-icon .icon-circle i {
-  font-size: 24px;
+  font-size: 28px;
   color: white;
 }
 
@@ -607,7 +607,7 @@ body, html {
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 15px;
+  gap: 18px;
 }
 
 .mission-header {
@@ -618,7 +618,7 @@ body, html {
 
 .mission-header h3 {
   color: #2d1810;
-  font-size: 20px;
+  font-size: 24px;
   font-weight: 600;
   text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
   font-family: 'Georgia', 'Times New Roman', serif;
@@ -650,14 +650,14 @@ body, html {
 
 .mission-date {
   color: #5d4037;
-  font-size: 14px;
+  font-size: 16px;
   font-style: italic;
   font-family: 'Georgia', 'Times New Roman', serif;
 }
 
 .mission-description {
   color: #2d1810;
-  font-size: 16px;
+  font-size: 18px;
   line-height: 1.6;
   font-family: 'Georgia', 'Times New Roman', serif;
 }
@@ -682,15 +682,15 @@ body, html {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-top: 10px;
+  margin-top: 15px;
 }
 
 .mission-points {
   background: #8B4513;
   color: white;
-  padding: 8px 16px;
-  border-radius: 20px;
-  font-size: 14px;
+  padding: 10px 20px;
+  border-radius: 25px;
+  font-size: 16px;
   font-weight: 600;
   box-shadow: 0 2px 8px rgba(0,0,0,0.2);
   font-family: 'Georgia', 'Times New Roman', serif;
@@ -702,9 +702,9 @@ body, html {
   background: #8B4513;
   color: white;
   border: none;
-  padding: 12px 24px;
-  border-radius: 6px;
-  font-size: 14px;
+  padding: 15px 30px;
+  border-radius: 8px;
+  font-size: 16px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.3s ease;
@@ -754,22 +754,49 @@ body, html {
 }
 
 /* Responsive mejorado */
-@media (max-width: 1200px) {
+@media (max-width: 1400px) {
+  .dashboard-background {
+    max-width: 1100px;
+  }
+  
   .stats-section {
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    padding: 30px 40px;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    padding: 50px 70px;
   }
   
   .missions-section {
-    padding: 40px;
+    padding: 70px;
   }
   
   .user-section {
-    padding: 30px 40px;
+    padding: 40px 70px;
   }
   
   .dashboard-header {
-    padding: 40px;
+    padding: 50px 70px;
+  }
+}
+
+@media (max-width: 1200px) {
+  .dashboard-background {
+    max-width: 1000px;
+  }
+  
+  .stats-section {
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    padding: 40px 60px;
+  }
+  
+  .missions-section {
+    padding: 60px;
+  }
+  
+  .user-section {
+    padding: 35px 60px;
+  }
+  
+  .dashboard-header {
+    padding: 45px 60px;
   }
 }
 
@@ -778,16 +805,21 @@ body, html {
     padding: 0;
   }
   
+  .dashboard-background {
+    max-width: 95%;
+    margin: 20px auto;
+  }
+  
   .dashboard-header {
     padding: 30px 20px;
   }
   
   .dashboard-header h1 {
-    font-size: 24px;
+    font-size: 28px;
   }
   
   .user-section {
-    padding: 20px;
+    padding: 25px 20px;
     flex-direction: column;
     gap: 20px;
     text-align: center;
@@ -795,18 +827,18 @@ body, html {
   
   .stats-section {
     grid-template-columns: repeat(2, 1fr);
-    padding: 20px;
-    gap: 15px;
+    padding: 30px 20px;
+    gap: 20px;
   }
   
   .missions-section {
-    padding: 20px;
+    padding: 30px 20px;
   }
   
   .mission-item {
     flex-direction: column;
     text-align: center;
-    padding: 25px;
+    padding: 30px;
   }
   
   .mission-footer {
