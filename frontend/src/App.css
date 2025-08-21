@@ -353,7 +353,7 @@ body, html {
   display: grid;
   grid-template-columns: 1fr 2fr;
   gap: 30px;
-  padding: 50px 80px;
+  padding: 50px 80px 50px 80px;
   background: #f5f5dc;
   border-bottom: 2px solid #8B4513;
   width: 100%;
@@ -429,7 +429,7 @@ body, html {
   flex-direction: column;
   justify-content: center;
   gap: 22px;
-  padding: 0;
+  padding: 0 20px 0 0;
   background: transparent;
   width: 100%;
   margin: 0;
@@ -440,6 +440,7 @@ body, html {
   gap: 60px;
   align-items: center;
   justify-content: flex-start;
+  padding-right: 20px;
 }
 
 .stat-item {
@@ -792,6 +793,14 @@ body, html {
     padding: 40px 70px;
   }
   
+  .stats-section {
+    padding: 0 15px 0 0;
+  }
+  
+  .stats-row {
+    padding-right: 15px;
+  }
+  
   .missions-section {
     padding: 70px;
   }
@@ -808,6 +817,14 @@ body, html {
   
   .user-section {
     padding: 35px 60px;
+  }
+  
+  .stats-section {
+    padding: 0 10px 0 0;
+  }
+  
+  .stats-row {
+    padding-right: 10px;
   }
   
   .missions-section {
@@ -859,12 +876,14 @@ body, html {
   
   .stats-section {
     align-items: center;
+    padding: 0;
   }
   
   .stats-row {
     flex-direction: column;
     gap: 20px;
     align-items: center;
+    padding-right: 0;
   }
   
   .stat-item {
