@@ -122,6 +122,22 @@ router.post('/:id/complete', ensureAuthenticated, async (req, res) => {
 
   const { accessToken, id: userId } = req.user;
   
+  // Check if user has valid Twitter access token
+  if (!accessToken) {
+    return res.status(403).json({ 
+      error: 'Twitter access token not available. Please reconnect your Twitter account.',
+      details: 'User needs to re-authenticate with Twitter'
+    });
+  }
+
+  // Validate token format
+  if (typeof accessToken !== 'string' || accessToken.trim() === '') {
+    return res.status(403).json({ 
+      error: 'Invalid Twitter access token format. Please reconnect your Twitter account.',
+      details: 'Token format is invalid'
+    });
+  }
+
   // Use OAuth 2.0 with access token
   const client = new TwitterApi(accessToken);
 
