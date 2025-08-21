@@ -176,20 +176,10 @@ body, html {
 
 .login-header {
   background: #f5f5dc;
-  padding: 25px;
+  padding: 35px 25px;
   text-align: center;
   border-bottom: 3px solid #8B4513;
   position: relative;
-}
-
-.login-header::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 2px;
-  background: linear-gradient(90deg, transparent, #8B4513, transparent);
 }
 
 .login-header h1 {

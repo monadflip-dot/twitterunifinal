@@ -1,0 +1,5 @@
+[33m112fdae[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m feat: add comprehensive troubleshooting guide for 502 errors and backend improvements
+[33m803c3b2[m Login robustness: popup-first with redirect fallback; clear firebase:* storage before flow
+[33mc24fb56[m Sync session on auth state change to ensure redirect result fallback; fix missing redirect to dashboard
+[33m43e8d95[m Force redirect-only Twitter login and signOut before starting flow to avoid stale tokens
+[33me032045[m Add redirect fallback for Twitter login and handle getRedirectResult on mount
