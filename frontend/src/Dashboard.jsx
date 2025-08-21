@@ -136,59 +136,61 @@ function Dashboard({ user, onLogout }) {
           </div>
           
           <div className="user-section">
-            <div className="user-info">
-              <div className="user-avatar">
-                <img src={user?.photo || favicon} alt="Avatar" />
+            <div className="user-profile">
+              <div className="user-info">
+                <div className="user-avatar">
+                  <img src={user?.photo || favicon} alt="Avatar" />
+                </div>
+                <div className="user-details">
+                  <h3>{user?.displayName || 'User'}</h3>
+                  <p>@{user?.username || 'username'}</p>
+                </div>
               </div>
-              <div className="user-details">
-                <h3>{user?.displayName || 'User'}</h3>
-                <p>@{user?.username || 'username'}</p>
-              </div>
-            </div>
-            <button className="logout-button" onClick={onLogout}>
-              <i className="fas fa-sign-out-alt"></i>
-              Logout
-            </button>
-          </div>
-          
-          <div className="stats-section">
-            <div className="stat-item">
-              <div className="stat-icon">
-                <i className="fas fa-star"></i>
-              </div>
-              <div className="stat-content">
-                <h4>{stats.totalPoints}</h4>
-                <p>TOTAL POINTS</p>
-              </div>
+              <button className="logout-button" onClick={onLogout}>
+                <i className="fas fa-sign-out-alt"></i>
+                Logout
+              </button>
             </div>
             
-            <div className="stat-item">
-              <div className="stat-icon">
-                <i className="fas fa-check-circle"></i>
+            <div className="stats-section">
+              <div className="stat-item">
+                <div className="stat-icon">
+                  <i className="fas fa-star"></i>
+                </div>
+                <div className="stat-content">
+                  <h4>{stats.totalPoints}</h4>
+                  <p>TOTAL POINTS</p>
+                </div>
               </div>
-              <div className="stat-content">
-                <h4>{stats.completedMissions}</h4>
-                <p>COMPLETED MISSIONS</p>
+              
+              <div className="stat-item">
+                <div className="stat-icon">
+                  <i className="fas fa-check-circle"></i>
+                </div>
+                <div className="stat-content">
+                  <h4>{stats.completedMissions}</h4>
+                  <p>COMPLETED MISSIONS</p>
+                </div>
               </div>
-            </div>
-            
-            <div className="stat-item">
-              <div className="stat-icon">
-                <i className="fas fa-list"></i>
+              
+              <div className="stat-item">
+                <div className="stat-icon">
+                  <i className="fas fa-list"></i>
+                </div>
+                <div className="stat-content">
+                  <h4>{stats.totalMissions}</h4>
+                  <p>TOTAL MISSIONS</p>
+                </div>
               </div>
-              <div className="stat-content">
-                <h4>{stats.totalMissions}</h4>
-                <p>TOTAL MISSIONS</p>
-              </div>
-            </div>
-            
-            <div className="stat-item">
-              <div className="stat-icon">
-                <i className="fas fa-clock"></i>
-              </div>
-              <div className="stat-content">
-                <h4>{stats.pendingMissions}</h4>
-                <p>PENDING MISSIONS</p>
+              
+              <div className="stat-item">
+                <div className="stat-icon">
+                  <i className="fas fa-clock"></i>
+                </div>
+                <div className="stat-content">
+                  <h4>{stats.pendingMissions}</h4>
+                  <p>PENDING MISSIONS</p>
+                </div>
               </div>
             </div>
           </div>
