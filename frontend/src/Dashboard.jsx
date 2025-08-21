@@ -153,43 +153,45 @@ function Dashboard({ user, onLogout }) {
             </div>
             
             <div className="stats-section">
-              <div className="stat-item">
-                <div className="stat-icon">
-                  <i className="fas fa-star"></i>
+              <div className="stats-row">
+                <div className="stat-item">
+                  <div className="stat-icon">
+                    <i className="fas fa-star"></i>
+                  </div>
+                  <div className="stat-content">
+                    <h4>{stats.totalPoints}</h4>
+                    <p>TOTAL POINTS</p>
+                  </div>
                 </div>
-                <div className="stat-content">
-                  <h4>{stats.totalPoints}</h4>
-                  <p>TOTAL POINTS</p>
+                
+                <div className="stat-item">
+                  <div className="stat-icon">
+                    <i className="fas fa-check-circle"></i>
+                  </div>
+                  <div className="stat-content">
+                    <h4>{stats.completedMissions}</h4>
+                    <p>COMPLETED MISSIONS</p>
+                  </div>
                 </div>
-              </div>
-              
-              <div className="stat-item">
-                <div className="stat-icon">
-                  <i className="fas fa-check-circle"></i>
+                
+                <div className="stat-item">
+                  <div className="stat-icon">
+                    <i className="fas fa-list"></i>
+                  </div>
+                  <div className="stat-content">
+                    <h4>{stats.totalMissions}</h4>
+                    <p>TOTAL MISSIONS</p>
+                  </div>
                 </div>
-                <div className="stat-content">
-                  <h4>{stats.completedMissions}</h4>
-                  <p>COMPLETED MISSIONS</p>
-                </div>
-              </div>
-              
-              <div className="stat-item">
-                <div className="stat-icon">
-                  <i className="fas fa-list"></i>
-                </div>
-                <div className="stat-content">
-                  <h4>{stats.totalMissions}</h4>
-                  <p>TOTAL MISSIONS</p>
-                </div>
-              </div>
-              
-              <div className="stat-item">
-                <div className="stat-icon">
-                  <i className="fas fa-clock"></i>
-                </div>
-                <div className="stat-content">
-                  <h4>{stats.pendingMissions}</h4>
-                  <p>PENDING MISSIONS</p>
+                
+                <div className="stat-item">
+                  <div className="stat-icon">
+                    <i className="fas fa-clock"></i>
+                  </div>
+                  <div className="stat-content">
+                    <h4>{stats.pendingMissions}</h4>
+                    <p>PENDING MISSIONS</p>
+                  </div>
                 </div>
               </div>
             </div>
