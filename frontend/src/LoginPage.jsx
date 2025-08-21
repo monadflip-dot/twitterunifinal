@@ -106,7 +106,7 @@ function LoginPage() {
 
 	return (
 		<div className="login-container">
-			<div className="login-background">
+			<div className="login-background wooden-panel">
 				<div className="login-panel">
 					<div className="login-header">
 						<h1>TWITTER MISSIONS</h1>
@@ -125,6 +125,8 @@ function LoginPage() {
 						</button>
 					</div>
 				</div>
+				<div className="bottom-left"></div>
+				<div className="bottom-right"></div>
 			</div>
 		</div>
 	);

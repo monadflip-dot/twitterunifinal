@@ -124,7 +124,7 @@ function Dashboard({ user, onLogout }) {
 
   return (
     <div className="dashboard-container">
-      <div className="dashboard-background">
+      <div className="dashboard-background wooden-panel">
         <div className="dashboard-panel">
           <div style={{ display: 'flex', justifyContent: 'center', marginTop: '20px' }}>
             <img src={favicon} alt="Logo" style={{ width: '100px', height: '100px' }} />
@@ -206,6 +206,8 @@ function Dashboard({ user, onLogout }) {
             />
           </div>
         </div>
+        <div className="bottom-left"></div>
+        <div className="bottom-right"></div>
       </div>
     </div>
   );
