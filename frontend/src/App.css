@@ -352,7 +352,7 @@ body, html {
 .user-section {
   display: grid;
   grid-template-columns: 1fr 2fr;
-  gap: 40px;
+  gap: 30px;
   padding: 50px 80px;
   background: #f5f5dc;
   border-bottom: 2px solid #8B4513;
@@ -427,7 +427,7 @@ body, html {
 .stats-section {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 25px;
+  gap: 20px;
   align-items: start;
   padding: 0;
   background: transparent;
@@ -438,8 +438,8 @@ body, html {
 .stat-item {
   background: #f5f5dc;
   border: 3px solid #8B4513;
-  border-radius: 15px;
-  padding: 25px 20px;
+  border-radius: 12px;
+  padding: 18px 15px;
   text-align: center;
   transition: all 0.3s ease;
   box-shadow: 0 4px 15px rgba(0,0,0,0.1);
@@ -453,55 +453,55 @@ body, html {
 }
 
 .stat-icon {
-  width: 50px;
-  height: 50px;
+  width: 40px;
+  height: 40px;
   background: #8B4513;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin: 0 auto 15px;
+  margin: 0 auto 12px;
   border: 3px solid #654321;
   box-shadow: 0 4px 15px rgba(0,0,0,0.2);
 }
 
 .stat-icon i {
-  font-size: 20px;
+  font-size: 16px;
   color: white;
 }
 
 /* Iconos específicos para las estadísticas */
 .stat-icon .fa-star {
   color: #FFD700 !important;
-  font-size: 22px;
+  font-size: 18px;
 }
 
 .stat-icon .fa-check-circle {
   color: #32CD32 !important;
-  font-size: 20px;
+  font-size: 16px;
 }
 
 .stat-icon .fa-list {
   color: #87CEEB !important;
-  font-size: 20px;
+  font-size: 16px;
 }
 
 .stat-icon .fa-clock {
   color: #FFA500 !important;
-  font-size: 20px;
+  font-size: 16px;
 }
 
 .stat-content h4 {
   color: #2d1810;
-  font-size: 32px;
+  font-size: 26px;
   font-weight: 700;
-  margin-bottom: 8px;
+  margin-bottom: 6px;
   text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
 }
 
 .stat-content p {
   color: #5d4037;
-  font-size: 14px;
+  font-size: 12px;
   font-weight: 500;
   text-transform: uppercase;
   letter-spacing: 1px;
