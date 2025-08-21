@@ -126,13 +126,8 @@ function Dashboard({ user, onLogout }) {
     <div className="dashboard-container">
       <div className="dashboard-background wooden-panel">
         <div className="dashboard-panel">
-          <div style={{ display: 'flex', justifyContent: 'center', marginTop: '20px' }}>
-            <img src={favicon} alt="Logo" style={{ width: '100px', height: '100px' }} />
-          </div>
-          <div className="dashboard-header">
-            <h1>MISSIONS DASHBOARD</h1>
-            <div className="header-separator"></div>
-            <p className="dashboard-subtitle">Complete missions and earn points</p>
+          <div style={{ display: 'flex', justifyContent: 'center', marginTop: '30px' }}>
+            <img src={favicon} alt="Logo" style={{ width: '150px', height: '150px' }} />
           </div>
           
           <div className="user-section">
