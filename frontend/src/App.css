@@ -86,8 +86,8 @@ body, html {
 /* Remaches metálicos */
 .wooden-panel {
   position: relative;
-  border: 8px solid #654321;
-  border-radius: 15px;
+  border: 16px solid #654321;
+  border-radius: 20px;
   box-shadow: 
     inset 0 0 20px rgba(0,0,0,0.3),
     0 10px 30px rgba(0,0,0,0.5),
@@ -114,13 +114,13 @@ body, html {
 }
 
 .wooden-panel::before {
-  top: -14px;
-  left: -14px;
+  top: -10px;
+  left: -10px;
 }
 
 .wooden-panel::after {
-  top: -14px;
-  right: -14px;
+  top: -10px;
+  right: -10px;
 }
 
 .wooden-panel .bottom-left::before,
@@ -140,13 +140,13 @@ body, html {
 }
 
 .wooden-panel .bottom-left::before {
-  bottom: -14px;
-  left: -14px;
+  bottom: -10px;
+  left: -10px;
 }
 
 .wooden-panel .bottom-right::before {
-  bottom: -14px;
-  right: -14px;
+  bottom: -10px;
+  right: -10px;
 }
 
 /* Login Page */
@@ -161,7 +161,7 @@ body, html {
 
 .login-background {
   background: #f5f5dc;
-  border-radius: 15px;
+  border-radius: 20px;
   box-shadow: 0 10px 30px rgba(0,0,0,0.5);
   overflow: hidden;
   width: 100%;
@@ -176,7 +176,7 @@ body, html {
 
 .login-header {
   background: #f5f5dc;
-  padding: 30px;
+  padding: 40px;
   text-align: center;
   border-bottom: 3px solid #8B4513;
   position: relative;
@@ -212,7 +212,7 @@ body, html {
 }
 
 .login-content {
-  padding: 40px 30px;
+  padding: 50px 40px;
   text-align: center;
   background: #f5f5dc;
 }
@@ -292,7 +292,7 @@ body, html {
 
 .dashboard-background {
   background: #f5f5dc;
-  border-radius: 20px;
+  border-radius: 25px;
   box-shadow: 0 10px 30px rgba(0,0,0,0.5);
   overflow: hidden;
   width: 100%;
@@ -311,7 +311,7 @@ body, html {
 /* Dashboard Header */
 .dashboard-header {
   background: #f5f5dc;
-  padding: 40px 50px;
+  padding: 50px 60px;
   text-align: center;
   width: 100%;
   margin: 0;
@@ -353,7 +353,7 @@ body, html {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 30px 50px;
+  padding: 40px 60px;
   background: #f5f5dc;
   border-bottom: 2px solid #8B4513;
   width: 100%;
@@ -419,7 +419,7 @@ body, html {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   gap: 25px;
-  padding: 40px 50px;
+  padding: 50px 60px;
   background: #f5f5dc;
   width: 100%;
   margin: 0;
@@ -500,7 +500,7 @@ body, html {
 
 /* Missions Section */
 .missions-section {
-  padding: 50px;
+  padding: 60px;
   background: #f5f5dc;
   width: 100%;
   margin: 0;
