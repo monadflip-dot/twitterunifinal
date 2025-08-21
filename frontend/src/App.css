@@ -114,13 +114,13 @@ body, html {
 }
 
 .wooden-panel::before {
-  top: 2px;
-  left: 2px;
+  top: 6px;
+  left: 6px;
 }
 
 .wooden-panel::after {
-  top: 2px;
-  right: 2px;
+  top: 6px;
+  right: 6px;
 }
 
 .wooden-panel .bottom-left::before,
@@ -140,13 +140,13 @@ body, html {
 }
 
 .wooden-panel .bottom-left::before {
-  bottom: 2px;
-  left: 2px;
+  bottom: 6px;
+  left: 6px;
 }
 
 .wooden-panel .bottom-right::before {
-  bottom: 2px;
-  right: 2px;
+  bottom: 6px;
+  right: 6px;
 }
 
 /* Login Page */
