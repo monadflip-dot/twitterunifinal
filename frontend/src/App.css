@@ -428,7 +428,7 @@ body, html {
   display: flex;
   flex-direction: column;
   justify-content: center;
-  gap: 15px;
+  gap: 22px;
   padding: 0;
   background: transparent;
   width: 100%;
@@ -437,7 +437,7 @@ body, html {
 
 .stats-row {
   display: flex;
-  gap: 40px;
+  gap: 60px;
   align-items: center;
   justify-content: flex-start;
 }
@@ -445,7 +445,7 @@ body, html {
 .stat-item {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 18px;
   background: transparent;
   border: none;
   padding: 0;
@@ -462,54 +462,54 @@ body, html {
 }
 
 .stat-icon {
-  width: 35px;
-  height: 35px;
+  width: 52px;
+  height: 52px;
   background: #8B4513;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   margin: 0;
-  border: 2px solid #654321;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+  border: 3px solid #654321;
+  box-shadow: 0 3px 12px rgba(0,0,0,0.2);
   flex-shrink: 0;
 }
 
 .stat-icon i {
-  font-size: 14px;
+  font-size: 21px;
   color: white;
 }
 
 /* Iconos específicos para las estadísticas */
 .stat-icon .fa-star {
   color: #FFD700 !important;
-  font-size: 16px;
+  font-size: 24px;
 }
 
 .stat-icon .fa-check-circle {
   color: #32CD32 !important;
-  font-size: 14px;
+  font-size: 21px;
 }
 
 .stat-icon .fa-list {
   color: #87CEEB !important;
-  font-size: 14px;
+  font-size: 21px;
 }
 
 .stat-icon .fa-clock {
   color: #FFA500 !important;
-  font-size: 14px;
+  font-size: 21px;
 }
 
 .stat-content {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 3px;
 }
 
 .stat-content h4 {
   color: #2d1810;
-  font-size: 24px;
+  font-size: 36px;
   font-weight: 700;
   margin: 0;
   text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
@@ -518,10 +518,10 @@ body, html {
 
 .stat-content p {
   color: #5d4037;
-  font-size: 11px;
+  font-size: 16px;
   font-weight: 500;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.8px;
   font-style: italic;
   margin: 0;
   line-height: 1;
