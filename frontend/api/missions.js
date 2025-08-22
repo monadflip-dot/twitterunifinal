@@ -1,28 +1,40 @@
 import jwt from 'jsonwebtoken';
 
-// Mock missions data - puedes expandir esto
+// Real missions data from the original backend
 const missions = [
   {
-    id: 1,
-    title: "Follow @PenguinFishingClub",
-    description: "Follow our official Twitter account",
-    type: "follow",
+    id: 1, 
+    type: 'like', 
+    title: 'Like the ABSPFC tweet about the match',
+    description: 'Like the ABSPFC tweet about the match', 
+    tweetId: '1957149650118377661', 
+    points: 50,
+    completed: false
+  },
+  { 
+    id: 2, 
+    type: 'retweet', 
+    title: 'Retweet the ABSPFC tweet',
+    description: 'Retweet the ABSPFC tweet', 
+    tweetId: '1957149650118377661', 
+    points: 75,
+    completed: false
+  },
+  { 
+    id: 3, 
+    type: 'comment', 
+    title: 'Comment on the ABSPFC tweet',
+    description: 'Comment on the ABSPFC tweet', 
+    tweetId: '1957149650118377661', 
     points: 100,
     completed: false
   },
   {
-    id: 2,
-    title: "Like our latest tweet",
-    description: "Like our most recent post",
-    type: "like",
-    points: 50,
-    completed: false
-  },
-  {
-    id: 3,
-    title: "Retweet announcement",
-    description: "Retweet our latest announcement",
-    type: "retweet",
+    id: 4,
+    type: 'follow',
+    title: 'Follow the official ABSPFC account on Twitter',
+    description: 'Follow the official ABSPFC account on Twitter',
+    targetUserId: 'ABSPFC',
     points: 150,
     completed: false
   }
