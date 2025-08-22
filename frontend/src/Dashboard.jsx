@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import MissionList from './MissionList';
 import favicon from '../images/favicon.png';
 
-const API_URL = process.env.REACT_APP_API_URL || 'https://twitterunifinal.onrender.com';
+const API_URL = process.env.REACT_APP_API_URL || '';
 
 function Dashboard({ user, onLogout }) {
   const [missions, setMissions] = useState([]);

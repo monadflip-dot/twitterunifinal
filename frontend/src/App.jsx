@@ -5,7 +5,7 @@ import './App.css';
 import { auth } from './firebase';
 import { signOut } from 'firebase/auth';
 
-const API_URL = process.env.REACT_APP_API_URL || 'https://twitterunifinal.onrender.com';
+const API_URL = process.env.REACT_APP_API_URL || '';
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);

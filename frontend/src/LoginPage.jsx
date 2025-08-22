@@ -3,7 +3,7 @@ import favicon from '../images/favicon.png';
 import { auth, twitterProvider } from './firebase';
 import { getAdditionalUserInfo, TwitterAuthProvider, signInWithRedirect, getRedirectResult, onAuthStateChanged, signInWithPopup } from 'firebase/auth';
 
-const API_URL = process.env.REACT_APP_API_URL || 'https://twitterunifinal.onrender.com';
+const API_URL = process.env.REACT_APP_API_URL || '';
 
 function LoginPage() {
 	// Procesar resultado de redirect si existe
