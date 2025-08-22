@@ -18,8 +18,18 @@ function App() {
 
   const checkAuthStatus = async () => {
     try {
+      const token = localStorage.getItem('jwt_token');
+      if (!token) {
+        setIsAuthenticated(false);
+        setUser(null);
+        setLoading(false);
+        return;
+      }
+      
       const response = await fetch(`${API_URL}/api/user`, {
-        credentials: 'include'
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
       });
       
       if (response.ok) {
@@ -41,15 +51,27 @@ function App() {
 
   const handleLogout = async () => {
     try {
-      await fetch(`${API_URL}/auth/logout`, {
-        method: 'POST',
-        credentials: 'include'
-      });
+      const token = localStorage.getItem('jwt_token');
+      if (token) {
+        // Call logout API
+        await fetch(`${API_URL}/api/logout`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+      }
+      // Clear JWT token from localStorage
+      localStorage.removeItem('jwt_token');
       try { await signOut(auth); } catch {}
       setIsAuthenticated(false);
       setUser(null);
     } catch (error) {
       console.error('Error logging out:', error);
+      // Even if API call fails, clear local state
+      localStorage.removeItem('jwt_token');
+      setIsAuthenticated(false);
+      setUser(null);
     }
   };
 

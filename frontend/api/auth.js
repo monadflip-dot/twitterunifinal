@@ -47,10 +47,7 @@ export default async function handler(req, res) {
     // Issue JWT session token
     const token = jwt.sign(user, process.env.SESSION_SECRET || 'your-secret-key', { expiresIn: '24h' });
     
-    // Set HTTP-only cookie
-    res.setHeader('Set-Cookie', `jwt=${token}; HttpOnly; Secure; SameSite=Lax; Max-Age=${24 * 60 * 60}`);
-    
-    return res.json({ success: true, user });
+    return res.json({ success: true, user, token });
     
   } catch (err) {
     console.error('Firebase auth error:', err);

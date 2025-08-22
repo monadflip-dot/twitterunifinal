@@ -29,8 +29,11 @@ function Dashboard({ user, onLogout }) {
 
   const fetchMissions = async () => {
     try {
+      const token = localStorage.getItem('jwt_token');
       const response = await fetch(`${API_URL}/api/missions`, {
-        credentials: 'include'
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
       });
       
       if (response.ok) {
@@ -61,9 +64,12 @@ function Dashboard({ user, onLogout }) {
       // Simular delay de lectura/verificación
       await new Promise(resolve => setTimeout(resolve, 5000));
       
+      const token = localStorage.getItem('jwt_token');
       const response = await fetch(`${API_URL}/api/missions/${missionId}/complete`, {
         method: 'POST',
-        credentials: 'include'
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
       });
 
       if (response.ok) {

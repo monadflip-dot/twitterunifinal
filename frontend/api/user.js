@@ -6,8 +6,8 @@ export default async function handler(req, res) {
   }
 
   try {
-    // Get JWT from cookie or Authorization header
-    const token = req.cookies?.jwt || req.headers.authorization?.split(' ')[1];
+    // Get JWT from Authorization header
+    const token = req.headers.authorization?.split(' ')[1];
     
     if (!token) {
       return res.status(401).json({ error: 'No token provided' });

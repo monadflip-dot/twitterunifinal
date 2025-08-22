@@ -27,10 +27,9 @@ function LoginPage() {
 			if (!firebaseUser) return;
 			try {
 				const idToken = await firebaseUser.getIdToken();
-				await fetch(`${API_URL}/auth/firebase`, {
+				const response = await fetch(`${API_URL}/api/auth`, {
 					method: 'POST',
 					headers: { 'Content-Type': 'application/json' },
-					credentials: 'include',
 					body: JSON.stringify({
 						idToken,
 						profile: {
@@ -41,6 +40,12 @@ function LoginPage() {
 						}
 					})
 				});
+				
+				if (response.ok) {
+					const data = await response.json();
+					// Store JWT token in localStorage
+					localStorage.setItem('jwt_token', data.token);
+				}
 				window.location.replace('/');
 			} catch (e) {
 				console.error('Auth state sync failed:', e?.code, e?.message);
@@ -63,10 +68,9 @@ function LoginPage() {
 		const info = getAdditionalUserInfo(result);
 		const screenName = info?.username || firebaseUser?.reloadUserInfo?.screenName || firebaseUser?.displayName || 'user';
 		const idToken = await firebaseUser.getIdToken();
-		await fetch(`${API_URL}/auth/firebase`, {
+		const response = await fetch(`${API_URL}/api/auth`, {
 			method: 'POST',
 			headers: { 'Content-Type': 'application/json' },
-			credentials: 'include',
 			body: JSON.stringify({
 				idToken,
 				twitterAccessToken: accessToken,
@@ -80,6 +84,12 @@ function LoginPage() {
 				}
 			})
 		});
+		
+		if (response.ok) {
+			const data = await response.json();
+			// Store JWT token in localStorage
+			localStorage.setItem('jwt_token', data.token);
+		}
 	};
 
 	const handleTwitterLogin = async () => {
