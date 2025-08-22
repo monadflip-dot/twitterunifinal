@@ -198,6 +198,15 @@ function Dashboard({ user, onLogout }) {
             </div>
           </div>
           
+          <div className="wallet-section">
+            <div className="section-header">
+              <h2>ABSTRACT WALLET</h2>
+              <div className="section-separator"></div>
+            </div>
+            
+            <WalletSection />
+          </div>
+          
           <div className="missions-section">
             <div className="section-header">
               <h2>AVAILABLE MISSIONS</h2>
