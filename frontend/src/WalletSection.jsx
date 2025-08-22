@@ -133,7 +133,7 @@ function WalletSection() {
           <div className="wallet-description">
             <p>
               <i className="fas fa-info-circle"></i>
-              Add your EVM wallet address (0x format) to access NFT minting once you complete missions
+              Add your AGW wallet address to access NFT minting once you complete missions
             </p>
           </div>
           
@@ -143,7 +143,7 @@ function WalletSection() {
                 type="text"
                 value={walletInput}
                 onChange={(e) => setWalletInput(e.target.value)}
-                placeholder="Enter EVM wallet address (0x...)"
+                placeholder="Enter Abstract AGW wallet address (0x...)"
                 className="wallet-input"
                 disabled={submitting}
               />
@@ -160,7 +160,7 @@ function WalletSection() {
                 ) : (
                   <>
                     <i className="fas fa-plus"></i>
-                    Add Wallet
+                    AGW Wallet
                   </>
                 )}
               </button>
