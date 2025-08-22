@@ -1,5 +1,10 @@
 # 🚀 Configuración de Vercel para PENGUIN FISHING CLUB
 
+## 🌐 **Dominio personalizado configurado:**
+- **URL principal**: `https://fishingclubmissions.xyz`
+- **Sin www**: Redirige automáticamente a la versión sin www
+- **SSL automático**: HTTPS configurado automáticamente
+
 ## 📋 Variables de Entorno Requeridas
 
 ### **Firebase Admin SDK:**
