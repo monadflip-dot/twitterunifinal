@@ -1021,27 +1021,27 @@ body, html {
 }
 
 .wallet-input::placeholder {
-  color: rgba(255, 255, 255, 0.7);
+  color: #2d1810;
   opacity: 1;
 }
 
 .wallet-input::-webkit-input-placeholder {
-  color: rgba(255, 255, 255, 0.7);
+  color: #2d1810;
   opacity: 1;
 }
 
 .wallet-input:-moz-placeholder {
-  color: rgba(255, 255, 255, 0.7);
+  color: #2d1810;
   opacity: 1;
 }
 
 .wallet-input::-moz-placeholder {
-  color: rgba(255, 255, 255, 0.7);
+  color: #2d1810;
   opacity: 1;
 }
 
 .wallet-input:-ms-input-placeholder {
-  color: rgba(255, 255, 255, 0.7);
+  color: #2d1810;
   opacity: 1;
 }
 
