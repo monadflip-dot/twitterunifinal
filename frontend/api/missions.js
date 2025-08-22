@@ -1,4 +1,19 @@
 import jwt from 'jsonwebtoken';
+import { initializeApp, getApps, cert } from 'firebase-admin/app';
+import { getFirestore } from 'firebase-admin/firestore';
+
+// Initialize Firebase Admin if not already initialized
+if (!getApps().length) {
+  initializeApp({
+    credential: cert({
+      projectId: process.env.FIREBASE_PROJECT_ID,
+      clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+      privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n')
+    })
+  });
+}
+
+const db = getFirestore();
 
 // Real missions data from the original backend
 const missions = [
@@ -42,7 +57,7 @@ const missions = [
 
 export default async function handler(req, res) {
   // Verify JWT first
-  const token = req.cookies?.jwt || req.headers.authorization?.split(' ')[1];
+  const token = req.headers.authorization?.split(' ')[1];
   
   if (!token) {
     return res.status(401).json({ error: 'No token provided' });
@@ -52,8 +67,23 @@ export default async function handler(req, res) {
     const decoded = jwt.verify(token, process.env.SESSION_SECRET || 'your-secret-key');
     
     if (req.method === 'GET') {
-      // Return missions for the user
-      return res.json({ missions, user: decoded });
+      // Get user progress from Firestore
+      const userProgressRef = db.collection('userProgress').doc(decoded.id);
+      const userProgressDoc = await userProgressRef.get();
+      
+      let completedMissionIds = [];
+      if (userProgressDoc.exists) {
+        const data = userProgressDoc.data();
+        completedMissionIds = data.completedMissions || [];
+      }
+      
+      // Mark missions as completed based on database
+      const missionsWithProgress = missions.map(mission => ({
+        ...mission,
+        completed: completedMissionIds.includes(mission.id)
+      }));
+      
+      return res.json({ missions: missionsWithProgress, user: decoded });
     }
     
     if (req.method === 'POST') {
@@ -65,12 +95,39 @@ export default async function handler(req, res) {
         return res.status(404).json({ error: 'Mission not found' });
       }
       
-      // Mark mission as completed
-      mission.completed = true;
+      // Check if already completed
+      const userProgressRef = db.collection('userProgress').doc(decoded.id);
+      const userProgressDoc = await userProgressRef.get();
+      
+      let completedMissions = [];
+      let totalPoints = 0;
+      
+      if (userProgressDoc.exists) {
+        const data = userProgressDoc.data();
+        completedMissions = data.completedMissions || [];
+        totalPoints = data.totalPoints || 0;
+      }
+      
+      if (completedMissions.includes(missionId)) {
+        return res.status(400).json({ error: 'Mission already completed' });
+      }
+      
+      // Add mission to completed list and update points
+      completedMissions.push(missionId);
+      totalPoints += mission.points;
+      
+      // Save to Firestore
+      await userProgressRef.set({
+        userId: decoded.id,
+        completedMissions,
+        totalPoints,
+        lastUpdated: new Date()
+      }, { merge: true });
       
       return res.json({ 
         success: true, 
         mission,
+        totalPoints,
         message: `Mission completed! You earned ${mission.points} points!`
       });
     }

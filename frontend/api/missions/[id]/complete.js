@@ -1,6 +1,21 @@
 import jwt from 'jsonwebtoken';
+import { initializeApp, getApps, cert } from 'firebase-admin/app';
+import { getFirestore } from 'firebase-admin/firestore';
 
-// Mock missions data (same as in missions.js)
+// Initialize Firebase Admin if not already initialized
+if (!getApps().length) {
+  initializeApp({
+    credential: cert({
+      projectId: process.env.FIREBASE_PROJECT_ID,
+      clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+      privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n')
+    })
+  });
+}
+
+const db = getFirestore();
+
+// Real missions data
 const missions = [
   {
     id: 1, 
@@ -69,8 +84,35 @@ export default async function handler(req, res) {
       });
     }
 
-    // For now, we'll simulate mission completion
-    // In a real implementation, you would verify with Twitter API
+    // Check if already completed
+    const userProgressRef = db.collection('userProgress').doc(decoded.id);
+    const userProgressDoc = await userProgressRef.get();
+    
+    let completedMissions = [];
+    let totalPoints = 0;
+    
+    if (userProgressDoc.exists) {
+      const data = userProgressDoc.data();
+      completedMissions = data.completedMissions || [];
+      totalPoints = data.totalPoints || 0;
+    }
+    
+    if (completedMissions.includes(missionId)) {
+      return res.status(400).json({ error: 'Mission already completed' });
+    }
+    
+    // Add mission to completed list and update points
+    completedMissions.push(missionId);
+    totalPoints += mission.points;
+    
+    // Save to Firestore
+    await userProgressRef.set({
+      userId: decoded.id,
+      completedMissions,
+      totalPoints,
+      lastUpdated: new Date()
+    }, { merge: true });
+    
     console.log(`Mission ${missionId} completed by user ${decoded.id}`);
 
     return res.json({ 
@@ -78,6 +120,7 @@ export default async function handler(req, res) {
       missionId, 
       type: mission.type, 
       points: mission.points,
+      totalPoints,
       message: 'Mission completed successfully!'
     });
 
