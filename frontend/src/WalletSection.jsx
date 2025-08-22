@@ -36,11 +36,24 @@ function WalletSection() {
     }
   };
 
+  // Validación de wallet EVM
+  const isValidEVMAddress = (address) => {
+    // Debe empezar con 0x y tener 42 caracteres (0x + 40 caracteres hex)
+    const evmRegex = /^0x[a-fA-F0-9]{40}$/;
+    return evmRegex.test(address);
+  };
+
   const handleSubmitWallet = async (e) => {
     e.preventDefault();
     
     if (!walletInput.trim()) {
       setError('Please enter a wallet address');
+      return;
+    }
+
+    // Validar formato EVM
+    if (!isValidEVMAddress(walletInput.trim())) {
+      setError('Please enter a valid EVM wallet address (0x followed by 40 hexadecimal characters)');
       return;
     }
 
@@ -120,7 +133,7 @@ function WalletSection() {
           <div className="wallet-description">
             <p>
               <i className="fas fa-info-circle"></i>
-              Add your Abstract wallet address to access NFT minting once you complete missions
+              Add your EVM wallet address (0x format) to access NFT minting once you complete missions
             </p>
           </div>
           
@@ -130,7 +143,7 @@ function WalletSection() {
                 type="text"
                 value={walletInput}
                 onChange={(e) => setWalletInput(e.target.value)}
-                placeholder="Enter your Abstract wallet address (0x...)"
+                placeholder="Enter EVM wallet address (0x...)"
                 className="wallet-input"
                 disabled={submitting}
               />
