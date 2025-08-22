@@ -1052,10 +1052,6 @@ body, html {
   box-shadow: 0 0 15px rgba(76, 175, 80, 0.3);
 }
 
-.wallet-input::placeholder {
-  color: rgba(255, 255, 255, 0.6);
-}
-
 .add-wallet-btn {
   padding: 12px 20px;
   background: linear-gradient(135deg, #4CAF50, #45a049);
