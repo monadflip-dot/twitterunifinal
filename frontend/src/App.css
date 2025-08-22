@@ -355,8 +355,8 @@ body, html {
 .user-section {
   display: grid;
   grid-template-columns: 1fr 2fr;
-  gap: 30px;
-  padding: 50px 80px;
+  gap: 25px;
+  padding: 30px 60px;
   background: #f5f5dc;
   border-bottom: 2px solid #8B4513;
   width: 100%;
@@ -533,7 +533,7 @@ body, html {
 
 /* Missions Section */
 .missions-section {
-  padding: 80px;
+  padding: 40px 60px;
   background: #f5f5dc;
   width: 100%;
   margin: 0;
@@ -916,15 +916,15 @@ body, html {
 
 /* Wallet Section Styles */
 .wallet-section {
-  padding: 40px 60px;
-  margin: 20px 0;
+  padding: 20px 60px;
+  margin: 10px 0;
 }
 
 .wallet-container {
   background: rgba(255, 255, 255, 0.05);
-  border-radius: 15px;
-  padding: 30px;
-  border: 2px solid rgba(139, 69, 19, 0.3);
+  border-radius: 10px;
+  padding: 20px;
+  border: 1px solid rgba(139, 69, 19, 0.3);
 }
 
 .wallet-info {
@@ -989,7 +989,7 @@ body, html {
 }
 
 .wallet-description {
-  margin-bottom: 25px;
+  margin-bottom: 15px;
   color: #87CEEB;
   font-style: italic;
 }
@@ -1001,22 +1001,22 @@ body, html {
 
 .input-group {
   display: flex;
-  gap: 15px;
+  gap: 12px;
   justify-content: center;
   align-items: center;
-  margin-bottom: 20px;
+  margin-bottom: 15px;
   flex-wrap: wrap;
 }
 
 .wallet-input {
   flex: 1;
-  min-width: 300px;
-  padding: 15px 20px;
+  min-width: 250px;
+  padding: 12px 16px;
   border: 2px solid rgba(139, 69, 19, 0.5);
-  border-radius: 10px;
+  border-radius: 8px;
   background: rgba(255, 255, 255, 0.1);
   color: #fff;
-  font-size: 1em;
+  font-size: 0.9em;
   font-family: 'Courier New', monospace;
   transition: all 0.3s ease;
 }
@@ -1033,19 +1033,19 @@ body, html {
 }
 
 .add-wallet-btn {
-  padding: 15px 25px;
+  padding: 12px 20px;
   background: linear-gradient(135deg, #4CAF50, #45a049);
   border: none;
-  border-radius: 10px;
+  border-radius: 8px;
   color: white;
-  font-size: 1em;
+  font-size: 0.9em;
   font-weight: bold;
   cursor: pointer;
   transition: all 0.3s ease;
   display: flex;
   align-items: center;
-  gap: 10px;
-  min-width: 150px;
+  gap: 8px;
+  min-width: 120px;
   justify-content: center;
 }
 
