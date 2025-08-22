@@ -176,9 +176,8 @@ body, html {
 
 .login-header {
   background: #f5f5dc;
-  padding: 35px 25px;
+  padding: 35px 25px 50px 25px;
   text-align: center;
-  border-bottom: 3px solid #8B4513;
   position: relative;
 }
 
@@ -193,16 +192,10 @@ body, html {
   text-transform: uppercase;
 }
 
-.header-separator {
-  height: 3px;
-  background: #8B4513;
-  width: 60%;
-  margin: 0 auto;
-  border-radius: 2px;
-}
+
 
 .login-content {
-  padding: 50px 40px;
+  padding: 30px 40px 50px 40px;
   text-align: center;
   background: #f5f5dc;
 }
