@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import MissionList from './MissionList';
+import WalletSection from './WalletSection';
 import favicon from '../images/favicon.png';
 
 const API_URL = process.env.REACT_APP_API_URL || '';
