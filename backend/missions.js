@@ -44,6 +44,30 @@ const exampleMissions = [
     targetUserId: 'ABSPFC',
     points: 150,
     completed: false
+  },
+  {
+    id: 5, 
+    type: 'like', 
+    description: 'Like the latest ABSPFC tweet', 
+    tweetId: '1959220121584513532', 
+    points: 50,
+    completed: false
+  },
+  { 
+    id: 6, 
+    type: 'retweet', 
+    description: 'Retweet the latest ABSPFC tweet', 
+    tweetId: '1959220121584513532', 
+    points: 75,
+    completed: false
+  },
+  { 
+    id: 7, 
+    type: 'comment', 
+    description: 'Comment on the latest ABSPFC tweet', 
+    tweetId: '1959220121584513532', 
+    points: 100,
+    completed: false
   }
 ];
 
