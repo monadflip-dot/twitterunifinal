@@ -43,8 +43,8 @@ app.use(session({
 }));
 
 // Initialize Passport
-app.use(passport.initialize());
-app.use(passport.session());
+// app.use(passport.initialize());
+// app.use(passport.session());
 
 // Middleware to verify JWT (restored from working version)
 const authenticateJWT = (req, res, next) => {
