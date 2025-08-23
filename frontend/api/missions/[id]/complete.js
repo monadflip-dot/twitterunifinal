@@ -22,7 +22,7 @@ const missions = [
     type: 'like', 
     title: 'Like the ABSPFC tweet about the match',
     description: 'Like the ABSPFC tweet about the match', 
-    tweetId: '1957149650118377661', 
+    tweetId: '1957140118377661', 
     points: 50,
     completed: false
   },
@@ -31,7 +31,7 @@ const missions = [
     type: 'retweet', 
     title: 'Retweet the ABSPFC tweet',
     description: 'Retweet the ABSPFC tweet', 
-    tweetId: '1957149650118377661', 
+    tweetId: '1957140118377661', 
     points: 75,
     completed: false
   },
@@ -40,7 +40,7 @@ const missions = [
     type: 'comment', 
     title: 'Comment on the ABSPFC tweet',
     description: 'Comment on the ABSPFC tweet', 
-    tweetId: '1957149650118377661', 
+    tweetId: '1957140118377661', 
     points: 100,
     completed: false
   },
@@ -51,6 +51,33 @@ const missions = [
     description: 'Follow the official ABSPFC account on Twitter',
     targetUserId: 'ABSPFC',
     points: 150,
+    completed: false
+  },
+  {
+    id: 5, 
+    type: 'like', 
+    title: 'Like the latest ABSPFC tweet',
+    description: 'Like the latest ABSPFC tweet', 
+    tweetId: '1959220121584513532', 
+    points: 50,
+    completed: false
+  },
+  { 
+    id: 6, 
+    type: 'retweet', 
+    title: 'Retweet the latest ABSPFC tweet',
+    description: 'Retweet the latest ABSPFC tweet', 
+    tweetId: '1959220121584513532', 
+    points: 75,
+    completed: false
+  },
+  { 
+    id: 7, 
+    type: 'comment', 
+    title: 'Comment on the latest ABSPFC tweet',
+    description: 'Comment on the latest ABSPFC tweet', 
+    tweetId: '1959220121584513532', 
+    points: 100,
     completed: false
   }
 ];
