@@ -31,14 +31,38 @@ function Dashboard({ user, onLogout }) {
   const fetchMissions = async () => {
     try {
       const token = localStorage.getItem('jwt_token');
-      const response = await fetch(`${API_URL}/api/missions`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
       
-      if (response.ok) {
-        const data = await response.json();
+      // Primero intentar con autenticación
+      if (token) {
+        const response = await fetch(`${API_URL}/api/missions`, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          const missionsData = data.missions || [];
+          setMissions(missionsData);
+          
+          // Calcular estadísticas
+          const completed = missionsData.filter(m => m.completed).length;
+          setStats({
+            totalPoints: missionsData.filter(m => m.completed).reduce((sum, m) => sum + m.points, 0),
+            completedMissions: completed,
+            totalMissions: missionsData.length,
+            pendingMissions: missionsData.length - completed
+          });
+          return;
+        }
+      }
+      
+      // Si falla la autenticación, usar endpoint de prueba
+      console.log('🔍 Trying fallback missions endpoint...');
+      const fallbackResponse = await fetch(`${API_URL}/api/test/missions`);
+      
+      if (fallbackResponse.ok) {
+        const data = await fallbackResponse.json();
         const missionsData = data.missions || [];
         setMissions(missionsData);
         
@@ -50,9 +74,15 @@ function Dashboard({ user, onLogout }) {
           totalMissions: missionsData.length,
           pendingMissions: missionsData.length - completed
         });
+        
+        console.log('✅ Missions loaded from fallback endpoint:', missionsData.length);
+      } else {
+        console.error('❌ Both endpoints failed');
+        setMissions([]);
       }
     } catch (error) {
       console.error('Error fetching missions:', error);
+      setMissions([]);
     }
   };
 
