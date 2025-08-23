@@ -85,11 +85,13 @@ router.get('/', ensureAuthenticated, async (req, res) => {
     console.log('🔍 Missions endpoint called for user:', userId);
     console.log('🔍 allMissions length:', allMissions.length);
     console.log('🔍 allMissions IDs:', allMissions.map(m => m.id));
+    console.log('🔍 allMissions types:', allMissions.map(m => m.type));
     
     // Get user progress from database
     const userProgress = await dbHelpers.getUserProgress(userId);
     const completedMissionIds = userProgress.map(p => p.missionId);
     console.log('🔍 User completed missions:', completedMissionIds);
+    console.log('🔍 User progress length:', userProgress.length);
     
     // Mark missions as completed based on database
     const missionsWithProgress = allMissions.map(mission => ({
@@ -99,6 +101,7 @@ router.get('/', ensureAuthenticated, async (req, res) => {
     
     console.log('🔍 Sending missions to frontend:', missionsWithProgress.length);
     console.log('🔍 Mission IDs being sent:', missionsWithProgress.map(m => m.id));
+    console.log('🔍 Full missions being sent:', JSON.stringify(missionsWithProgress, null, 2));
     
     res.json({ missions: missionsWithProgress });
   } catch (error) {
