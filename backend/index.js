@@ -282,7 +282,7 @@ app.get('/auth/twitter/callback', async (req, res) => {
   // Check for errors
   if (error) {
     console.log('❌ Twitter OAuth error:', error);
-    return res.redirect(`${process.env.FRONTEND_URL || 'https://twitterunifinal.onrender.com'}?error=${error}`);
+    return res.redirect('https://pfcwhitelist.xyz?error=${error}');
   }
   
   // Verify state with memory storage
@@ -290,7 +290,7 @@ app.get('/auth/twitter/callback', async (req, res) => {
     console.log('❌ No OAuth state found in memory storage');
     console.log('Received state:', state);
     console.log('Available states:', Array.from(oauthStates.keys()));
-    return res.redirect(`${process.env.FRONTEND_URL || 'https://twitterunifinal.onrender.com'}?error=no_session_state`);
+    return res.redirect('https://pfcwhitelist.xyz?error=no_session_state');
   }
   
   const oauthData = oauthStates.get(state);
@@ -318,7 +318,7 @@ app.get('/auth/twitter/callback', async (req, res) => {
     if (!tokenResponse.ok) {
       const errorText = await tokenResponse.text();
       console.log('❌ Token exchange failed:', tokenResponse.status, errorText);
-      return res.redirect(`${process.env.FRONTEND_URL || 'https://twitterunifinal.onrender.com'}?error=token_error`);
+      return res.redirect('https://pfcwhitelist.xyz?error=token_error');
     }
     
     const tokenData = await tokenResponse.json();
@@ -361,7 +361,7 @@ app.get('/auth/twitter/callback', async (req, res) => {
       console.log('✅ User saved to database:', user.username);
     } catch (dbError) {
       console.error('❌ Error saving user to database:', dbError);
-      return res.redirect(`${process.env.FRONTEND_URL || 'https://twitterunifinal.onrender.com'}?error=db_save_error`);
+      return res.redirect('https://pfcwhitelist.xyz?error=db_save_error');
     }
     
     // Generate JWT
@@ -381,13 +381,13 @@ app.get('/auth/twitter/callback', async (req, res) => {
     console.log('✅ Remaining states in memory:', oauthStates.size);
     
     console.log('✅ Authentication successful, redirecting to frontend');
-    res.redirect(process.env.FRONTEND_URL || 'https://twitterunifinal.onrender.com');
+    res.redirect('https://pfcwhitelist.xyz');
     
   } catch (error) {
     console.error('💥 Error in OAuth callback:', error);
     // Clear OAuth state on error too
     oauthStates.delete(state);
-    res.redirect(`${process.env.FRONTEND_URL || 'https://twitterunifinal.onrender.com'}?error=callback_error`);
+    res.redirect('https://pfcwhitelist.xyz?error=callback_error');
   }
 });
 
@@ -503,7 +503,7 @@ app.use(express.static(path.join(__dirname, '../frontend/dist')));
 
 // Root route - redirect to frontend
 app.get('/', (req, res) => {
-  res.redirect(process.env.FRONTEND_URL || 'http://localhost:3000');
+  res.redirect('https://pfcwhitelist.xyz');
 });
 
 // Catch-all route for SPA - serve frontend index.html
