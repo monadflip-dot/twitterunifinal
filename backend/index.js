@@ -11,6 +11,12 @@ const { dbHelpers } = require('./database');
 const { auth: firebaseAdminAuth, db: firestoreDb } = require('./firebase-admin');
 const { allMissions } = require('./missions-data');
 
+// Debug: Verify missions data import at server startup
+console.log('🚀 Server starting - allMissions loaded successfully');
+console.log('🚀 allMissions length:', allMissions.length);
+console.log('🚀 allMissions IDs:', allMissions.map(m => m.id));
+console.log('🚀 allMissions types:', allMissions.map(m => m.type));
+
 const app = express();
 const PORT = process.env.PORT || 3001;
 
