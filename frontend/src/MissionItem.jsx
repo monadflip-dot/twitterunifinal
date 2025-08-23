@@ -62,13 +62,7 @@ function MissionItem({ mission, onComplete, loadingMissionId }) {
           </div>
         </div>
         
-        <div className="mission-date">
-          {new Date().toLocaleDateString('es-ES', {
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric'
-          })}
-        </div>
+
         
         <div className="mission-description">
           {mission.description}
