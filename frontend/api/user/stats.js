@@ -45,8 +45,8 @@ export default async function handler(req, res) {
     const stats = {
       totalPoints,
       completedMissions: completedMissions.length,
-      totalMissions: 4, // Total missions available
-      pendingMissions: 4 - completedMissions.length
+      totalMissions: 7, // Total missions available (updated from 4 to 7)
+      pendingMissions: 7 - completedMissions.length
     };
     
     return res.json(stats);
