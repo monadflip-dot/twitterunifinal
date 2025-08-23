@@ -16,16 +16,23 @@ function ensureAuthenticated(req, res, next) {
 router.get('/', ensureAuthenticated, async (req, res) => {
   try {
     const userId = req.user.id;
+    console.log('🔍 Missions endpoint called for user:', userId);
+    console.log('🔍 allMissions length:', allMissions.length);
+    console.log('🔍 allMissions IDs:', allMissions.map(m => m.id));
     
     // Get user progress from database
     const userProgress = await dbHelpers.getUserProgress(userId);
     const completedMissionIds = userProgress.map(p => p.missionId);
+    console.log('🔍 User completed missions:', completedMissionIds);
     
     // Mark missions as completed based on database
     const missionsWithProgress = allMissions.map(mission => ({
       ...mission,
       completed: completedMissionIds.includes(mission.id)
     }));
+    
+    console.log('🔍 Sending missions to frontend:', missionsWithProgress.length);
+    console.log('🔍 Mission IDs being sent:', missionsWithProgress.map(m => m.id));
     
     res.json({ missions: missionsWithProgress });
   } catch (error) {
