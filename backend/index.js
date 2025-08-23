@@ -86,10 +86,10 @@ const oauthStates = new Map();
 // Middleware
 app.use(cors({
   origin: [
-    process.env.FRONTEND_URL || 'https://www.fishingclubmissions.xyz',
-    'https://fishingclubmissions.xyz',
-    'https://www.fishingclubmissions.xyz/',
-    'https://fishingclubmissions.xyz/',
+    process.env.FRONTEND_URL || 'https://www.pfcwhitelist.xyz',
+    'https://pfcwhitelist.xyz',
+    'https://www.pfcwhitelist.xyz/',
+    'https://pfcwhitelist.xyz/',
     'https://twitterunifinal.onrender.com',
     'https://twitterunifinal.vercel.app',
     'http://localhost:3000',
@@ -463,21 +463,21 @@ app.get('/health', (req, res) => {
   res.json({ status: 'OK', timestamp: new Date().toISOString() });
 });
 
-// Test endpoint for fishingclubmissions.xyz
+// Test endpoint for pfcwhitelist.xyz
 app.get('/api/test', (req, res) => {
   res.json({ 
-    message: 'Backend is working for fishingclubmissions.xyz',
+    message: 'Backend is working for pfcwhitelist.xyz',
     timestamp: new Date().toISOString(),
     domain: req.get('host'),
     origin: req.get('origin')
   });
 });
 
-// Test missions endpoint for fishingclubmissions.xyz
+// Test missions endpoint for pfcwhitelist.xyz
 app.get('/api/test/missions', (req, res) => {
   res.json({ 
     missions: allMissions,
-    message: 'Test missions endpoint for fishingclubmissions.xyz - All 7 missions included',
+    message: 'Test missions endpoint for pfcwhitelist.xyz - All 7 missions included',
     count: allMissions.length,
     timestamp: new Date().toISOString()
   });

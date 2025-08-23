@@ -1,9 +1,10 @@
-# 🚀 Configuración de Vercel para PENGUIN FISHING CLUB
+# Vercel Setup para PFC Whitelist
 
-## 🌐 **Dominio personalizado configurado:**
-- **URL principal**: `https://fishingclubmissions.xyz`
-- **Sin www**: Redirige automáticamente a la versión sin www
-- **SSL automático**: HTTPS configurado automáticamente
+## Configuración del proyecto
+
+- **URL principal**: `https://pfcwhitelist.xyz`
+- **Proyecto**: PFC Whitelist Missions
+- **Descripción**: Sistema de misiones para whitelist de PFC
 
 ## 📋 Variables de Entorno Requeridas
 
