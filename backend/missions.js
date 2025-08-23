@@ -93,6 +93,19 @@ router.get('/', ensureAuthenticated, async (req, res) => {
   }
 });
 
+// Public endpoint to get all missions (for testing)
+router.get('/public', (req, res) => {
+  try {
+    res.json({ 
+      missions: exampleMissions,
+      message: 'Public missions endpoint - no authentication required'
+    });
+  } catch (error) {
+    console.error('Error getting public missions:', error);
+    res.status(500).json({ error: 'Failed to get public missions' });
+  }
+});
+
 // Get user stats
 router.get('/stats', ensureAuthenticated, async (req, res) => {
   try {

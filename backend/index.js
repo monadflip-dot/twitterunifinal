@@ -9,6 +9,7 @@ const path = require('path');
 const cookieParser = require('cookie-parser');
 const { dbHelpers } = require('./database');
 const { auth: firebaseAdminAuth } = require('./firebase-admin');
+const { firestoreDb } = require('./firebase-admin'); // Added for wallet endpoint
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -344,6 +345,106 @@ app.get('/api/user', authenticateJWT, (req, res) => {
   console.log('👤 Authenticated user with JWT:', req.user.username);
   console.log('🔍 Full user object from JWT:', JSON.stringify(req.user, null, 2));
   res.json({ user: req.user });
+});
+
+// Wallet endpoints
+app.get('/api/user/wallet', authenticateJWT, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    
+    // Get user's wallet from Firestore
+    const userWalletRef = firestoreDb.collection('userWallets').doc(userId);
+    const userWalletDoc = await userWalletRef.get();
+    
+    if (userWalletDoc.exists) {
+      const data = userWalletDoc.data();
+      return res.json({ 
+        wallet: data.wallet,
+        addedAt: data.addedAt,
+        canChange: false // Once added, cannot be changed
+      });
+    } else {
+      return res.json({ 
+        wallet: null,
+        canChange: true // Can add wallet if none exists
+      });
+    }
+  } catch (error) {
+    console.error('Error fetching wallet:', error);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Direct missions endpoint (for testing and fallback)
+app.get('/api/missions/direct', (req, res) => {
+  try {
+    const missions = [
+      {
+        id: 1, 
+        type: 'like', 
+        description: 'Like the ABSPFC tweet about the match', 
+        tweetId: '1957149650118377661', 
+        points: 50,
+        completed: false
+      },
+      { 
+        id: 2, 
+        type: 'retweet', 
+        description: 'Retweet the ABSPFC tweet', 
+        tweetId: '1957149650118377661', 
+        points: 75,
+        completed: false
+      },
+      { 
+        id: 3, 
+        type: 'comment', 
+        description: 'Comment on the ABSPFC tweet', 
+        tweetId: '1957149650118377661', 
+        points: 100,
+        completed: false
+      },
+      {
+        id: 4,
+        type: 'follow',
+        description: 'Follow the official ABSPFC account on Twitter',
+        targetUserId: 'ABSPFC',
+        points: 150,
+        completed: false
+      },
+      {
+        id: 5, 
+        type: 'like', 
+        description: 'Like the latest ABSPFC tweet', 
+        tweetId: '1959220121584513532', 
+        points: 50,
+        completed: false
+      },
+      { 
+        id: 6, 
+        type: 'retweet', 
+        description: 'Retweet the latest ABSPFC tweet', 
+        tweetId: '1959220121584513532', 
+        points: 75,
+        completed: false
+      },
+      { 
+        id: 7, 
+        type: 'comment', 
+        description: 'Comment on the latest ABSPFC tweet', 
+        tweetId: '1959220121584513532', 
+        points: 100,
+        completed: false
+      }
+    ];
+    
+    res.json({ 
+      missions: missions,
+      message: 'Direct missions endpoint - all 7 missions included'
+    });
+  } catch (error) {
+    console.error('Error getting direct missions:', error);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
 });
 
 // Health check
