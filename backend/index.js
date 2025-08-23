@@ -417,6 +417,21 @@ app.get('/api/test/missions', (req, res) => {
   });
 });
 
+// Debug endpoint to check missions data
+app.get('/api/debug/missions', (req, res) => {
+  res.json({ 
+    missions: allMissions,
+    message: 'Debug missions endpoint - Raw missions data',
+    count: allMissions.length,
+    missionIds: allMissions.map(m => m.id),
+    missionTypes: allMissions.map(m => m.type),
+    missionDescriptions: allMissions.map(m => m.description),
+    tweetIds: allMissions.map(m => m.tweetId),
+    points: allMissions.map(m => m.points),
+    timestamp: new Date().toISOString()
+  });
+});
+
 // Serve frontend static files
 app.use(express.static(path.join(__dirname, '../frontend/dist')));
 
