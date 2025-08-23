@@ -3,7 +3,7 @@ import MissionList from './MissionList';
 import WalletSection from './WalletSection';
 import favicon from '../images/favicon.png';
 
-const API_URL = process.env.REACT_APP_API_URL || 'https://www.fishingclubmissions.xyz';
+const API_URL = process.env.REACT_APP_API_URL || '';
 
 function Dashboard({ user, onLogout }) {
   const [missions, setMissions] = useState([]);
