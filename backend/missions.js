@@ -1,6 +1,7 @@
 const express = require('express');
 const { TwitterApi } = require('twitter-api-v2');
 const { dbHelpers } = require('./database');
+const { allMissions } = require('./missions-data');
 const router = express.Router();
 
 // Middleware to protect routes (using JWT instead of sessions)
@@ -10,66 +11,6 @@ function ensureAuthenticated(req, res, next) {
   }
   res.status(401).json({ error: 'Not authenticated' });
 }
-
-// Specific missions with ABSPFC publication
-const exampleMissions = [
-  {
-    id: 1, 
-    type: 'like', 
-    description: 'Like the ABSPFC tweet about the match', 
-    tweetId: '1957149650118377661', 
-    points: 50,
-    completed: false
-  },
-  { 
-    id: 2, 
-    type: 'retweet', 
-    description: 'Retweet the ABSPFC tweet', 
-    tweetId: '1957149650118377661', 
-    points: 75,
-    completed: false
-  },
-  { 
-    id: 3, 
-    type: 'comment', 
-    description: 'Comment on the ABSPFC tweet', 
-    tweetId: '1957149650118377661', 
-    points: 100,
-    completed: false
-  },
-  {
-    id: 4,
-    type: 'follow',
-    description: 'Follow the official ABSPFC account on Twitter',
-    targetUserId: 'ABSPFC',
-    points: 150,
-    completed: false
-  },
-  {
-    id: 5, 
-    type: 'like', 
-    description: 'Like the latest ABSPFC tweet', 
-    tweetId: '1959220121584513532', 
-    points: 50,
-    completed: false
-  },
-  { 
-    id: 6, 
-    type: 'retweet', 
-    description: 'Retweet the latest ABSPFC tweet', 
-    tweetId: '1959220121584513532', 
-    points: 75,
-    completed: false
-  },
-  { 
-    id: 7, 
-    type: 'comment', 
-    description: 'Comment on the latest ABSPFC tweet', 
-    tweetId: '1959220121584513532', 
-    points: 100,
-    completed: false
-  }
-];
 
 // Get missions with user progress
 router.get('/', ensureAuthenticated, async (req, res) => {
@@ -81,7 +22,7 @@ router.get('/', ensureAuthenticated, async (req, res) => {
     const completedMissionIds = userProgress.map(p => p.missionId);
     
     // Mark missions as completed based on database
-    const missionsWithProgress = exampleMissions.map(mission => ({
+    const missionsWithProgress = allMissions.map(mission => ({
       ...mission,
       completed: completedMissionIds.includes(mission.id)
     }));
@@ -97,7 +38,7 @@ router.get('/', ensureAuthenticated, async (req, res) => {
 router.get('/public', (req, res) => {
   try {
     res.json({ 
-      missions: exampleMissions,
+      missions: allMissions,
       message: 'Public missions endpoint - no authentication required'
     });
   } catch (error) {
@@ -154,7 +95,7 @@ async function retryWithBackoff(fn, maxRetries = 2, baseDelay = 1000) {
 // Complete mission (verification real with retry intelligent)
 router.post('/:id/complete', ensureAuthenticated, async (req, res) => {
   const missionId = parseInt(req.params.id, 10);
-  const mission = exampleMissions.find(m => m.id === missionId);
+  const mission = allMissions.find(m => m.id === missionId);
   if (!mission) return res.status(404).json({ error: 'Mission not found' });
 
   const { accessToken, id: userId } = req.user;
