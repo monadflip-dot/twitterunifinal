@@ -4,6 +4,11 @@ const { dbHelpers } = require('./database');
 const { allMissions } = require('./missions-data');
 const router = express.Router();
 
+// Debug: Verify missions data import
+console.log('🔍 missions.js loaded - allMissions length:', allMissions.length);
+console.log('🔍 missions.js loaded - allMissions IDs:', allMissions.map(m => m.id));
+console.log('🔍 missions.js loaded - allMissions types:', allMissions.map(m => m.type));
+
 // Middleware to protect routes (using JWT instead of sessions)
 function ensureAuthenticated(req, res, next) {
   if (req.user) {
