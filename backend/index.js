@@ -3,10 +3,12 @@ const express = require('express');
 const cors = require('cors');
 const passport = require('./auth');
 const missionsRouter = require('./missions');
+const authRouter = require('./auth-routes');
 const session = require('express-session');
 const jwt = require('jsonwebtoken');
 const path = require('path');
 const cookieParser = require('cookie-parser');
+const crypto = require('crypto');
 const { dbHelpers } = require('./database');
 const { auth: firebaseAdminAuth, db: firestoreDb } = require('./firebase-admin');
 // const { allMissions } = require('./missions-data');
@@ -101,21 +103,16 @@ app.use(cors({
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
-
-// Session configuration
 app.use(session({
   secret: process.env.SESSION_SECRET || 'your-secret-key',
   resave: false,
   saveUninitialized: false,
   cookie: {
     secure: process.env.NODE_ENV === 'production',
-    maxAge: 24 * 60 * 60 * 1000 // 24 hours
+    httpOnly: true,
+    maxAge: 24 * 60 * 60 * 1000
   }
 }));
-
-// Initialize Passport
-// app.use(passport.initialize());
-// app.use(passport.session());
 
 // Middleware to verify JWT (restored from working version)
 const authenticateJWT = (req, res, next) => {
@@ -146,50 +143,147 @@ const authenticateJWT = (req, res, next) => {
   }
 };
 
-// 🔐 AUTH ROUTES (deben ir ANTES de las rutas protegidas)
-console.log('🔐 Registering auth routes...');
+// 🔐 REGISTER ROUTES IN CORRECT ORDER
+console.log('🔐 Registering routes...');
 
-// Firebase Auth login endpoint (from frontend)
-app.post('/api/auth/firebase', async (req, res) => {
-  console.log('📱 /api/auth/firebase endpoint called');
+// 1. AUTH ROUTES (must be first)
+app.use('/api/auth', authRouter);
+console.log('✅ Auth routes registered at /api/auth');
+
+// 2. PROTECTED ROUTES (after auth)
+app.use('/api/missions', authenticateJWT, missionsRouter);
+console.log('✅ Protected routes registered at /api/missions');
+
+// 3. PUBLIC ROUTES (last)
+// User info endpoint
+app.get('/api/user', authenticateJWT, async (req, res) => {
   try {
-    const { idToken, twitterAccessToken, twitterAccessSecret, profile } = req.body || {};
-    if (!idToken) {
-      return res.status(400).json({ error: 'Missing Firebase ID token' });
+    const { id: userId } = req.user;
+    console.log('👤 User info requested for:', userId);
+    
+    // Get user progress and stats
+    const userProgress = await dbHelpers.getUserProgress(userId);
+    const userStats = await dbHelpers.getUserStats(userId);
+    
+    // Combine user info from JWT with progress/stats
+    const userInfo = {
+      ...req.user,
+      progress: userProgress,
+      stats: userStats
+    };
+    
+    console.log('✅ User info sent for:', userInfo.username);
+    res.json(userInfo);
+  } catch (error) {
+    console.error('❌ Error getting user info:', error);
+    res.status(500).json({ error: 'Failed to get user info' });
+  }
+});
+
+// Twitter OAuth routes - Direct implementation without Passport
+app.get('/auth/twitter', (req, res) => {
+  console.log('🐦 Twitter OAuth initiated');
+  
+  // Generate PKCE challenge
+  const codeVerifier = generateCodeVerifier();
+  const state = Math.random().toString(36).substring(7);
+  
+  // Store state and code verifier (in production, use Redis or database)
+  oauthStates.set(state, { codeVerifier, timestamp: Date.now() });
+  
+  // Clean up old states (older than 10 minutes)
+  const tenMinutesAgo = Date.now() - 10 * 60 * 1000;
+  for (const [key, value] of oauthStates.entries()) {
+    if (value.timestamp < tenMinutesAgo) {
+      oauthStates.delete(key);
     }
+  }
+  
+  const authUrl = `https://twitter.com/i/oauth2/authorize?` +
+    `response_type=code&` +
+    `client_id=${process.env.TWITTER_CLIENT_ID}&` +
+    `redirect_uri=${encodeURIComponent(process.env.TWITTER_CALLBACK_URL)}&` +
+    `scope=tweet.read%20users.read&` + // Optimized scopes
+    `state=${state}&` +
+    `code_challenge_method=S256&` +
+    `code_challenge=${generateCodeChallenge(codeVerifier)}`;
+  
+  console.log('🔗 Redirecting to Twitter OAuth');
+  res.redirect(authUrl);
+});
 
-    // Verify Firebase ID token
-    const decoded = await firebaseAdminAuth.verifyIdToken(idToken);
-    console.log('✅ Firebase ID token verified for uid:', decoded.uid);
-
-    // Check if user has Twitter access token
-    if (!twitterAccessToken) {
-      console.log('⚠️ No Twitter access token, redirecting to Twitter OAuth');
-      return res.json({ 
-        success: false, 
-        action: 'redirect_to_twitter',
-        message: 'Twitter authentication required'
-      });
+app.get('/auth/twitter/callback', async (req, res) => {
+  console.log('🔄 Twitter OAuth callback received');
+  const { code, state } = req.query;
+  
+  if (!code || !state) {
+    console.log('❌ Missing code or state in callback');
+    return res.status(400).json({ error: 'Missing authorization code or state' });
+  }
+  
+  // Verify state and get code verifier
+  const storedState = oauthStates.get(state);
+  if (!storedState) {
+    console.log('❌ Invalid or expired state');
+    return res.status(400).json({ error: 'Invalid or expired state' });
+  }
+  
+  // Clean up used state
+  oauthStates.delete(state);
+  
+  try {
+    // Exchange code for access token
+    const tokenResponse = await fetch('https://api.twitter.com/2/oauth2/token', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'Authorization': `Basic ${Buffer.from(`${process.env.TWITTER_CLIENT_ID}:${process.env.TWITTER_CLIENT_SECRET}`).toString('base64')}`
+      },
+      body: new URLSearchParams({
+        grant_type: 'authorization_code',
+        code,
+        redirect_uri: process.env.TWITTER_CALLBACK_URL,
+        code_verifier: storedState.codeVerifier
+      })
+    });
+    
+    if (!tokenResponse.ok) {
+      const errorText = await tokenResponse.text();
+      console.error('❌ Twitter token exchange failed:', errorText);
+      throw new Error(`Twitter token exchange failed: ${tokenResponse.status}`);
     }
-
-    // Build user object (prefer Twitter profile info if available)
+    
+    const tokenData = await tokenResponse.json();
+    console.log('✅ Twitter access token obtained');
+    
+    // Get user info from Twitter
+    const userResponse = await fetch('https://api.twitter.com/2/users/me', {
+      headers: {
+        'Authorization': `Bearer ${tokenData.access_token}`
+      }
+    });
+    
+    if (!userResponse.ok) {
+      throw new Error('Failed to get Twitter user info');
+    }
+    
+    const userData = await userResponse.json();
+    console.log('✅ Twitter user info obtained:', userData.data.username);
+    
+    // Create or update user in our database
     const user = {
-      id: decoded.uid, // Always use Firebase UID for identity
-      username: profile?.screenName || profile?.screen_name || decoded.name || (decoded.uid ? decoded.uid.slice(0, 8) : 'user'),
-      displayName: profile?.displayName || profile?.name || decoded.name || 'User',
-      photo: profile?.photoURL || decoded.picture || null,
-      accessToken: twitterAccessToken,
-      accessSecret: twitterAccessSecret || null,
+      id: `twitter_${userData.data.id}`,
+      username: userData.data.username,
+      displayName: userData.data.name,
+      photo: userData.data.profile_image_url,
+      accessToken: tokenData.access_token,
+      accessSecret: null,
       twitter: {
-        id: profile?.id_str || profile?.id || null,
-        screenName: profile?.screenName || profile?.screen_name || null
+        id: userData.data.id,
+        screenName: userData.data.username
       }
     };
-
-    console.log('👤 Creating session for user:', user.username);
-    console.log('🔑 Twitter access token available:', !!user.accessToken);
-
-    // Persist basic user info (tokens remain in JWT)
+    
     try {
       await dbHelpers.createOrUpdateUser({
         id: user.id,
@@ -203,375 +297,42 @@ app.post('/api/auth/firebase', async (req, res) => {
       console.error('❌ Error saving user to database:', dbError);
       // Continue even if DB write fails
     }
-
-    // Issue our JWT session cookie
-    const token = jwt.sign(user, process.env.SESSION_SECRET || 'your-secret-key', { expiresIn: '24h' });
-    res.cookie('jwt', token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: 24 * 60 * 60 * 1000
-    });
-
-    return res.json({ 
-      success: true, 
-      message: 'Authentication successful with Twitter access token',
-      token: token // Enviar el token en la respuesta para que el frontend lo guarde
-    });
-  } catch (err) {
-    console.error('💥 Error in /api/auth/firebase:', err);
-    return res.status(401).json({ error: 'Firebase auth failed' });
-  }
-});
-
-// Add explicit logout to clear JWT cookie
-app.post('/api/auth/logout', (req, res) => {
-  console.log('📱 /api/auth/logout endpoint called');
-  try {
-    res.clearCookie('jwt', {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax'
-    });
-    return res.json({ success: true });
-  } catch (e) {
-    return res.status(500).json({ error: 'Logout failed' });
-  }
-});
-
-console.log('✅ Auth routes registered successfully');
-
-// Twitter OAuth routes - Direct implementation without Passport
-app.get('/auth/twitter', (req, res) => {
-  console.log('🔐 Starting Twitter authentication...');
-  console.log('🔑 Client ID:', process.env.TWITTER_CLIENT_ID ? 'Set' : 'Missing');
-  console.log('🔑 Client Secret:', process.env.TWITTER_CLIENT_SECRET ? 'Set' : 'Missing');
-  console.log('🔗 Callback URL:', process.env.TWITTER_CALLBACK_URL || 'Not set');
-  
-  // Generate state and code verifier for PKCE
-  const state = Math.random().toString(36).substring(2, 15);
-  const codeVerifier = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
-  
-  // Store in temporary memory storage with timestamp
-  oauthStates.set(state, {
-    codeVerifier: codeVerifier,
-    timestamp: Date.now()
-  });
-  
-  // Clean up old states (older than 10 minutes)
-  const tenMinutesAgo = Date.now() - 10 * 60 * 1000;
-  for (const [key, value] of oauthStates.entries()) {
-    if (value.timestamp < tenMinutesAgo) {
-      oauthStates.delete(key);
-    }
-  }
-  
-  console.log('✅ OAuth state stored in memory:', state);
-  console.log('✅ Code verifier stored:', codeVerifier);
-  console.log('✅ Total states in memory:', oauthStates.size);
-  
-  // Build Twitter OAuth URL with PKCE
-  const authUrl = `https://twitter.com/i/oauth2/authorize?` +
-    `response_type=code&` +
-    `client_id=${process.env.TWITTER_CLIENT_ID}&` +
-    `redirect_uri=${encodeURIComponent(process.env.TWITTER_CALLBACK_URL)}&` +
-    `scope=tweet.read%20users.read&` +
-    `state=${state}&` +
-    `code_challenge_method=S256&` +
-    `code_challenge=${generateCodeChallenge(codeVerifier)}`;
-  
-  console.log('🔗 Redirecting to:', authUrl);
-  console.log('🔒 Scopes solicitados: tweet.read, users.read (permisos mínimos)');
-  res.redirect(authUrl);
-});
-
-// Helper function to generate PKCE code challenge
-function generateCodeChallenge(verifier) {
-  const crypto = require('crypto');
-  const hash = crypto.createHash('sha256').update(verifier).digest();
-  return hash.toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
-}
-
-app.get('/auth/twitter/callback', async (req, res) => {
-  console.log('📱 Twitter callback received');
-  console.log('Query params:', req.query);
-  console.log('Total states in memory:', oauthStates.size);
-  
-  const { code, state, error } = req.query;
-  
-  // Check for errors
-  if (error) {
-    console.log('❌ Twitter OAuth error:', error);
-    return res.redirect('https://pfcwhitelist.xyz?error=${error}');
-  }
-  
-  // Verify state with memory storage
-  if (!oauthStates.has(state)) {
-    console.log('❌ No OAuth state found in memory storage');
-    console.log('Received state:', state);
-    console.log('Available states:', Array.from(oauthStates.keys()));
-    return res.redirect('https://pfcwhitelist.xyz?error=no_session_state');
-  }
-  
-  const oauthData = oauthStates.get(state);
-  console.log('✅ OAuth state found in memory:', state);
-  console.log('✅ Code verifier from memory:', oauthData.codeVerifier);
-  
-  try {
-    console.log('🔄 Exchanging code for token...');
     
-    // Exchange code for access token
-    const tokenResponse = await fetch('https://api.twitter.com/2/oauth2/token', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-        'Authorization': `Basic ${Buffer.from(`${process.env.TWITTER_CLIENT_ID}:${process.env.TWITTER_CLIENT_SECRET}`).toString('base64')}`
-      },
-      body: new URLSearchParams({
-        grant_type: 'authorization_code',
-        code: code,
-        redirect_uri: process.env.TWITTER_CALLBACK_URL,
-        code_verifier: oauthData.codeVerifier
-      })
-    });
-    
-    if (!tokenResponse.ok) {
-      const errorText = await tokenResponse.text();
-      console.log('❌ Token exchange failed:', tokenResponse.status, errorText);
-      return res.redirect('https://pfcwhitelist.xyz?error=token_error');
-    }
-    
-    const tokenData = await tokenResponse.json();
-    console.log('✅ Token obtained successfully');
-    
-    // Get user info
-    const userResponse = await fetch('https://api.twitter.com/2/users/me?user.fields=id,username,name,profile_image_url', {
-      headers: {
-        'Authorization': `Bearer ${tokenData.access_token}`
-      }
-    });
-    
-    let user;
-    if (userResponse.ok) {
-      const userData = await userResponse.json();
-      user = {
-        id: userData.data.id,
-        username: userData.data.username,
-        displayName: userData.data.name,
-        photo: userData.data.profile_image_url,
-        accessToken: tokenData.access_token
-      };
-    } else {
-      // Fallback user data
-      user = {
-        id: 'twitter_user_' + Date.now(),
-        username: 'twitter_user',
-        displayName: 'Twitter User',
-        photo: null,
-        accessToken: tokenData.access_token
-      };
-    }
-    
-    console.log('✅ User data obtained:', user.username);
-    console.log('🔍 Full user object:', JSON.stringify(user, null, 2));
-    
-    // Save user to database
-    try {
-      await dbHelpers.createOrUpdateUser(user);
-      console.log('✅ User saved to database:', user.username);
-    } catch (dbError) {
-      console.error('❌ Error saving user to database:', dbError);
-      return res.redirect('https://pfcwhitelist.xyz?error=db_save_error');
-    }
-    
-    // Generate JWT
+    // Issue JWT session cookie
     const token = jwt.sign(user, process.env.SESSION_SECRET || 'your-secret-key', { expiresIn: '24h' });
     
-    // Set JWT cookie and redirect
-    res.cookie('jwt', token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: 24 * 60 * 60 * 1000 // 24 hours
-    });
-    
-    // Clear OAuth state from memory
-    oauthStates.delete(state);
-    console.log('✅ OAuth state cleared from memory');
-    console.log('✅ Remaining states in memory:', oauthStates.size);
-    
-    console.log('✅ Authentication successful, redirecting to frontend with token');
-    // Redirect to frontend with JWT token in URL for frontend to capture
+    // Redirect to frontend with token
     res.redirect(`https://www.pfcwhitelist.xyz?token=${encodeURIComponent(token)}`);
     
   } catch (error) {
-    console.error('💥 Error in OAuth callback:', error);
-    // Clear OAuth state on error too
-    oauthStates.delete(state);
-    res.redirect('https://pfcwhitelist.xyz?error=callback_error');
+    console.error('💥 Error in Twitter OAuth callback:', error);
+    res.status(500).json({ error: 'OAuth callback failed' });
   }
 });
 
-app.get('/auth/logout', (req, res) => {
-  // Clear cookie regardless of passport session
-  try {
-    res.clearCookie('jwt', {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax'
-    });
-  } catch {}
+// Helper functions for PKCE
+function generateCodeVerifier() {
+  const array = new Uint8Array(32);
+  crypto.getRandomValues(array);
+  return base64URLEncode(array);
+}
 
-  req.logout((err) => {
-    if (err) {
-      console.error('Logout error:', err);
-      return res.status(500).json({ error: 'Logout failed' });
-    }
-    res.json({ message: 'Logged out successfully' });
-  });
-});
+function generateCodeChallenge(codeVerifier) {
+  const hash = crypto.createHash('sha256');
+  hash.update(codeVerifier);
+  return base64URLEncode(hash.digest());
+}
 
-// 🔒 PROTECTED ROUTES (después de las rutas de auth)
-console.log('🔒 Registering protected routes...');
-app.use('/api/missions', authenticateJWT, missionsRouter);
-console.log('✅ Protected routes registered successfully');
+function base64URLEncode(buffer) {
+  return buffer.toString('base64')
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_')
+    .replace(/=/g, '');
+}
 
-// User info endpoint
-app.get('/api/user', authenticateJWT, (req, res) => {
-  console.log('👤 Authenticated user with JWT:', req.user.username);
-  console.log('🔍 Full user object from JWT:', JSON.stringify(req.user, null, 2));
-  res.json({ user: req.user });
-});
+console.log('✅ All routes registered successfully');
 
-// Wallet endpoints
-app.get('/api/user/wallet', authenticateJWT, async (req, res) => {
-  try {
-    const userId = req.user.id;
-    
-    // Get user's wallet from Firestore
-    const userWalletRef = firestoreDb.collection('userWallets').doc(userId);
-    const userWalletDoc = await userWalletRef.get();
-    
-    if (userWalletDoc.exists) {
-      const data = userWalletDoc.data();
-      return res.json({ 
-        wallet: data.wallet,
-        addedAt: data.addedAt,
-        canChange: false // Once added, cannot be changed
-      });
-    } else {
-      return res.json({ 
-        wallet: null,
-        canChange: true // Can add wallet if none exists
-      });
-    }
-  } catch (error) {
-    console.error('Error fetching wallet:', error);
-    return res.status(500).json({ error: 'Internal server error' });
-  }
-});
-
-// Direct missions endpoint (for testing and fallback)
-app.get('/api/missions/direct', (req, res) => {
-  try {
-    res.json({ 
-      missions: allMissions,
-      message: 'Direct missions endpoint - all 7 missions included'
-    });
-  } catch (error) {
-    console.error('Error getting direct missions:', error);
-    return res.status(500).json({ error: 'Internal server error' });
-  }
-});
-
-// Health check
-app.get('/health', (req, res) => {
-  res.json({ status: 'OK', timestamp: new Date().toISOString() });
-});
-
-// Test endpoint for pfcwhitelist.xyz
-app.get('/api/test', (req, res) => {
-  res.json({ 
-    message: 'Backend is working for pfcwhitelist.xyz',
-    timestamp: new Date().toISOString(),
-    domain: req.get('host'),
-    origin: req.get('origin')
-  });
-});
-
-// Twitter API Status endpoint (for monitoring free API limitations)
-app.get('/api/twitter/status', (req, res) => {
-  res.json({ 
-    status: 'operational',
-    apiVersion: 'v2',
-    plan: 'free',
-    limitations: {
-      rateLimit: '300 requests per 15 minutes',
-      maxResults: '100 per request',
-      endpoints: [
-        'tweet.read',
-        'users.read',
-        'userLikedTweets',
-        'userTimeline',
-        'userFollowing',
-        'singleTweet',
-        'userByUsername'
-      ],
-      restrictions: [
-        'No write permissions required',
-        'Read-only verification only',
-        'Manual action completion required',
-        'Fallback verification when API fails'
-      ]
-    },
-    features: {
-      verification: 'passive (read-only)',
-      security: 'minimal permissions',
-      userControl: 'full manual control',
-      fallback: 'robust error handling'
-    },
-    timestamp: new Date().toISOString()
-  });
-});
-
-// Test missions endpoint for pfcwhitelist.xyz
-app.get('/api/test/missions', (req, res) => {
-  res.json({ 
-    missions: allMissions,
-    message: 'Test missions endpoint for pfcwhitelist.xyz - All 7 missions included',
-    count: allMissions.length,
-    timestamp: new Date().toISOString()
-  });
-});
-
-// Debug endpoint to check missions data
-app.get('/api/debug/missions', (req, res) => {
-  res.json({ 
-    missions: allMissions,
-    message: 'Debug missions endpoint - Raw missions data',
-    count: allMissions.length,
-    missionIds: allMissions.map(m => m.id),
-    missionTypes: allMissions.map(m => m.type),
-    missionDescriptions: allMissions.map(m => m.description),
-    tweetIds: allMissions.map(m => m.tweetId),
-    points: allMissions.map(m => m.points),
-    timestamp: new Date().toISOString()
-  });
-});
-
-// Serve frontend static files
-app.use(express.static(path.join(__dirname, '../frontend/dist')));
-
-// Root route - redirect to frontend
-app.get('/', (req, res) => {
-  res.redirect('https://pfcwhitelist.xyz');
-});
-
-// Catch-all route for SPA - serve frontend index.html
-app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, '../frontend/dist/index.html'));
-});
-
+// Start server
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
