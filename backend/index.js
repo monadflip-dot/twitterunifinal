@@ -150,7 +150,7 @@ const authenticateJWT = (req, res, next) => {
 app.use('/api/missions', authenticateJWT, missionsRouter);
 
 // Firebase Auth login endpoint (from frontend)
-app.post('/auth/firebase', async (req, res) => {
+app.post('/api/auth/firebase', async (req, res) => {
   try {
     const { idToken, twitterAccessToken, twitterAccessSecret, profile } = req.body || {};
     if (!idToken) {
@@ -214,16 +214,17 @@ app.post('/auth/firebase', async (req, res) => {
 
     return res.json({ 
       success: true, 
-      message: 'Authentication successful with Twitter access token'
+      message: 'Authentication successful with Twitter access token',
+      token: token // Enviar el token en la respuesta para que el frontend lo guarde
     });
   } catch (err) {
-    console.error('💥 Error in /auth/firebase:', err);
+    console.error('💥 Error in /api/auth/firebase:', err);
     return res.status(401).json({ error: 'Firebase auth failed' });
   }
 });
 
 // Add explicit logout to clear JWT cookie
-app.post('/auth/logout', (req, res) => {
+app.post('/api/auth/logout', (req, res) => {
   try {
     res.clearCookie('jwt', {
       httpOnly: true,
