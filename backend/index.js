@@ -161,13 +161,23 @@ app.post('/auth/firebase', async (req, res) => {
     const decoded = await firebaseAdminAuth.verifyIdToken(idToken);
     console.log('✅ Firebase ID token verified for uid:', decoded.uid);
 
+    // Check if user has Twitter access token
+    if (!twitterAccessToken) {
+      console.log('⚠️ No Twitter access token, redirecting to Twitter OAuth');
+      return res.json({ 
+        success: false, 
+        action: 'redirect_to_twitter',
+        message: 'Twitter authentication required'
+      });
+    }
+
     // Build user object (prefer Twitter profile info if available)
     const user = {
       id: decoded.uid, // Always use Firebase UID for identity
       username: profile?.screenName || profile?.screen_name || decoded.name || (decoded.uid ? decoded.uid.slice(0, 8) : 'user'),
       displayName: profile?.displayName || profile?.name || decoded.name || 'User',
       photo: profile?.photoURL || decoded.picture || null,
-      accessToken: twitterAccessToken || null,
+      accessToken: twitterAccessToken,
       accessSecret: twitterAccessSecret || null,
       twitter: {
         id: profile?.id_str || profile?.id || null,
@@ -176,6 +186,7 @@ app.post('/auth/firebase', async (req, res) => {
     };
 
     console.log('👤 Creating session for user:', user.username);
+    console.log('🔑 Twitter access token available:', !!user.accessToken);
 
     // Persist basic user info (tokens remain in JWT)
     try {
@@ -184,7 +195,7 @@ app.post('/auth/firebase', async (req, res) => {
         username: user.username,
         displayName: user.displayName,
         photo: user.photo,
-        accessToken: user.accessToken || ''
+        accessToken: user.accessToken
       });
       console.log('✅ User saved to database:', user.username);
     } catch (dbError) {
@@ -201,7 +212,10 @@ app.post('/auth/firebase', async (req, res) => {
       maxAge: 24 * 60 * 60 * 1000
     });
 
-    return res.json({ success: true });
+    return res.json({ 
+      success: true, 
+      message: 'Authentication successful with Twitter access token'
+    });
   } catch (err) {
     console.error('💥 Error in /auth/firebase:', err);
     return res.status(401).json({ error: 'Firebase auth failed' });
@@ -381,8 +395,9 @@ app.get('/auth/twitter/callback', async (req, res) => {
     console.log('✅ OAuth state cleared from memory');
     console.log('✅ Remaining states in memory:', oauthStates.size);
     
-    console.log('✅ Authentication successful, redirecting to frontend');
-    res.redirect('https://pfcwhitelist.xyz');
+    console.log('✅ Authentication successful, redirecting to frontend with token');
+    // Redirect to frontend with JWT token in URL for frontend to capture
+    res.redirect(`https://www.pfcwhitelist.xyz?token=${encodeURIComponent(token)}`);
     
   } catch (error) {
     console.error('💥 Error in OAuth callback:', error);

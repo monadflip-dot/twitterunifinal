@@ -14,6 +14,21 @@ function App() {
 
   useEffect(() => {
     checkAuthStatus();
+    
+    // Check if we have a token in URL (from Twitter OAuth callback)
+    const urlParams = new URLSearchParams(window.location.search);
+    const tokenFromUrl = urlParams.get('token');
+    
+    if (tokenFromUrl) {
+      console.log('🔑 JWT token found in URL, saving to localStorage');
+      localStorage.setItem('jwt_token', tokenFromUrl);
+      
+      // Remove token from URL
+      window.history.replaceState({}, document.title, window.location.pathname);
+      
+      // Check auth status again with the new token
+      checkAuthStatus();
+    }
   }, []);
 
   const checkAuthStatus = async () => {

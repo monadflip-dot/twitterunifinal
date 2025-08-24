@@ -68,7 +68,10 @@ function LoginPage() {
 		const info = getAdditionalUserInfo(result);
 		const screenName = info?.username || firebaseUser?.reloadUserInfo?.screenName || firebaseUser?.displayName || 'user';
 		const idToken = await firebaseUser.getIdToken();
-		const response = await fetch(`${API_URL}/api/auth`, {
+		
+		console.log('🔑 Twitter access token from Firebase:', !!accessToken);
+		
+		const response = await fetch(`${API_URL}/api/auth/firebase`, {
 			method: 'POST',
 			headers: { 'Content-Type': 'application/json' },
 			body: JSON.stringify({
@@ -87,8 +90,23 @@ function LoginPage() {
 		
 		if (response.ok) {
 			const data = await response.json();
-			// Store JWT token in localStorage
-			localStorage.setItem('jwt_token', data.token);
+			
+			if (data.success) {
+				// Store JWT token in localStorage
+				localStorage.setItem('jwt_token', data.token);
+				console.log('✅ Authentication successful with Twitter access token');
+				window.location.reload();
+			} else if (data.action === 'redirect_to_twitter') {
+				// No Twitter access token, redirect to backend Twitter OAuth
+				console.log('⚠️ Redirecting to Twitter OAuth for access token');
+				window.location.href = `${API_URL}/auth/twitter`;
+			} else {
+				console.error('❌ Authentication failed:', data.message);
+				alert('Authentication failed. Please try again.');
+			}
+		} else {
+			console.error('❌ API call failed:', response.status);
+			alert('Authentication failed. Please try again.');
 		}
 	};
 
