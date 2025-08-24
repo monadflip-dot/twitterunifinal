@@ -101,7 +101,7 @@ function Dashboard({ user, onLogout }) {
     setLoadingMissionId(missionId);
     
     try {
-      // Simular delay de lectura/verificación
+      // Simular delay de 5 segundos
       await new Promise(resolve => setTimeout(resolve, 5000));
       
       const token = localStorage.getItem('jwt_token');
@@ -121,11 +121,9 @@ function Dashboard({ user, onLogout }) {
           const mission = missions.find(m => m.id === missionId);
           console.log('Misión encontrada:', mission); // Debug log
           console.log('Puntos de la misión:', mission?.points); // Debug log
-          console.log('Puntos de la respuesta:', data.points); // Debug log
           
           setMissions(prev => {
             const newMissions = prev.map(m => m.id === missionId ? { ...m, completed: true } : m);
-            console.log('Misiones antes de actualizar:', prev); // Debug log
             console.log('Misiones después de actualizar:', newMissions); // Debug log
             return newMissions;
           });
@@ -133,7 +131,6 @@ function Dashboard({ user, onLogout }) {
           // Actualizar estadísticas usando los puntos de la misión local
           const pointsToAdd = mission?.points || 0;
           console.log('Puntos a agregar:', pointsToAdd); // Debug log
-          console.log('Estadísticas antes de actualizar:', stats); // Debug log
           
           setStats(prev => {
             const newStats = {
@@ -145,24 +142,18 @@ function Dashboard({ user, onLogout }) {
             console.log('Nuevas estadísticas:', newStats); // Debug log
             return newStats;
           });
+          
+          // Mostrar mensaje de éxito
+          alert(`✅ ${data.message || 'Mission completed successfully!'}`);
         } else {
-          alert('Could not verify the mission. Make sure you have completed the action on Twitter before clicking "Complete".');
+          alert('Error completing the mission. Please try again.');
         }
-      } else if (response.status === 429) {
-        const errorData = await response.json();
-        alert(`Rate limit exceeded: ${errorData.error}\n\nWait a few minutes before trying to verify the mission.`);
-      } else if (response.status === 403) {
-        const errorData = await response.json();
-        alert(`Permission error: ${errorData.error}\n\nVerify your Twitter account and granted permissions.`);
-      } else if (response.status === 500) {
-        const errorData = await response.json();
-        alert(`Server error: ${errorData.error}\n\nDetails: ${errorData.details || 'Unknown error'}`);
       } else {
-        alert('Error verifying the mission. Try again.');
+        alert('Error completing the mission. Please try again.');
       }
     } catch (error) {
       console.error('Error completing mission:', error);
-      alert('Connection error. Try again.');
+      alert('Connection error. Please try again.');
     } finally {
       setLoadingMissionId(null);
     }

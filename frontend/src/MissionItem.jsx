@@ -46,6 +46,25 @@ function MissionItem({ mission, onComplete, loadingMissionId }) {
     onComplete(mission.id);
   };
 
+  const getButtonText = () => {
+    if (mission.completed) return 'Completed';
+    if (loadingMissionId === mission.id) {
+      return (
+        <span>
+          <i className="fas fa-spinner fa-spin"></i> Completing...
+        </span>
+      );
+    }
+    if (started) return 'Complete Mission';
+    return 'Start Mission';
+  };
+
+  const getButtonClass = () => {
+    if (mission.completed) return 'mission-button completed';
+    if (started) return 'mission-button verify';
+    return 'mission-button start';
+  };
+
   return (
     <div className={`mission-item ${mission.completed ? 'completed' : ''}`}>
       <div className="mission-icon">
@@ -74,19 +93,11 @@ function MissionItem({ mission, onComplete, loadingMissionId }) {
           </div>
           
           <button
-            className={`mission-button ${mission.completed ? 'completed' : ''}`}
+            className={getButtonClass()}
             onClick={handleButtonClick}
             disabled={mission.completed || loadingMissionId === mission.id}
           >
-            {mission.completed ? 'Completed' : 
-             loadingMissionId === mission.id ? (
-               <span>
-                 <i className="fas fa-spinner fa-spin"></i> Verifying...
-               </span>
-             ) : (
-               started ? 'Complete Mission' : 'Start Mission'
-             )
-            }
+            {getButtonText()}
           </button>
         </div>
       </div>

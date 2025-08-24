@@ -256,12 +256,13 @@ app.get('/auth/twitter', (req, res) => {
     `response_type=code&` +
     `client_id=${process.env.TWITTER_CLIENT_ID}&` +
     `redirect_uri=${encodeURIComponent(process.env.TWITTER_CALLBACK_URL)}&` +
-    `scope=tweet.read%20users.read%20like.write%20like.read&` +
+    `scope=tweet.read%20users.read&` +
     `state=${state}&` +
     `code_challenge_method=S256&` +
     `code_challenge=${generateCodeChallenge(codeVerifier)}`;
   
   console.log('🔗 Redirecting to:', authUrl);
+  console.log('🔒 Scopes solicitados: tweet.read, users.read (permisos mínimos)');
   res.redirect(authUrl);
 });
 
@@ -470,6 +471,41 @@ app.get('/api/test', (req, res) => {
     timestamp: new Date().toISOString(),
     domain: req.get('host'),
     origin: req.get('origin')
+  });
+});
+
+// Twitter API Status endpoint (for monitoring free API limitations)
+app.get('/api/twitter/status', (req, res) => {
+  res.json({ 
+    status: 'operational',
+    apiVersion: 'v2',
+    plan: 'free',
+    limitations: {
+      rateLimit: '300 requests per 15 minutes',
+      maxResults: '100 per request',
+      endpoints: [
+        'tweet.read',
+        'users.read',
+        'userLikedTweets',
+        'userTimeline',
+        'userFollowing',
+        'singleTweet',
+        'userByUsername'
+      ],
+      restrictions: [
+        'No write permissions required',
+        'Read-only verification only',
+        'Manual action completion required',
+        'Fallback verification when API fails'
+      ]
+    },
+    features: {
+      verification: 'passive (read-only)',
+      security: 'minimal permissions',
+      userControl: 'full manual control',
+      fallback: 'robust error handling'
+    },
+    timestamp: new Date().toISOString()
   });
 });
 

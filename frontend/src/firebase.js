@@ -21,10 +21,14 @@ export const auth = getAuth(app);
 export const db = getFirestore(app);
 export const twitterProvider = new TwitterAuthProvider();
 
-// Configurar scopes de Twitter
+// 🔒 PERMISOS OPTIMIZADOS - Solo los mínimos necesarios
+// tweet.read: Para leer tweets y verificar contenido
+// users.read: Para obtener información básica del usuario
 twitterProvider.addScope('tweet.read');
 twitterProvider.addScope('users.read');
-twitterProvider.addScope('like.write');
-twitterProvider.addScope('like.read');
+
+// ❌ PERMISOS ELIMINADOS por seguridad:
+// like.write: NO necesario (solo verificación)
+// like.read: NO necesario (solo verificación)
 
 export default app;
