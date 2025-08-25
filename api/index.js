@@ -232,28 +232,44 @@ exports.getUserStats = async (req, res) => {
     const token = req.headers.authorization?.split(' ')[1] || req.cookies?.token || req.query?.token;
     if (!token) return res.status(401).json({ error: 'No token provided' });
     const decoded = jwt.verify(token, process.env.SESSION_SECRET || 'your-secret-key');
-    console.log('🔍 [STATS] JWT username:', decoded.username);
-    console.log('🔍 [STATS] JWT displayName:', decoded.displayName);
     let firebaseUserId = await findFirebaseUserId(decoded, firestoreDb);
-    console.log('🔍 [STATS] Firebase userId found:', firebaseUserId);
+    firebaseUserId = String(firebaseUserId);
+    console.log('🔍 [STATS] Firebase userId to search:', firebaseUserId);
     let completedMissions = [];
     let totalPoints = 0;
     let userWallet = null;
+    // Buscar por userId (string)
     let userProgressSnapshot = await firestoreDb.collection('userProgress').where('userId', '==', firebaseUserId).get();
     if (!userProgressSnapshot.empty) {
       const userProgress = userProgressSnapshot.docs[0].data();
-      console.log('🔍 [STATS] userProgress found:', userProgress);
+      console.log('🔍 [STATS] userProgress found by userId:', userProgress);
       if (userProgress.completedMissions) completedMissions = Object.values(userProgress.completedMissions);
       totalPoints = userProgress.totalPoints || 0;
     } else {
-      console.log('⚠️ [STATS] No userProgress found for userId:', firebaseUserId);
+      // Fallback: buscar por id (ID del documento)
+      let userProgressById = await firestoreDb.collection('userProgress').doc(firebaseUserId).get();
+      if (userProgressById.exists) {
+        const userProgress = userProgressById.data();
+        console.log('🔍 [STATS] userProgress found by doc id:', userProgress);
+        if (userProgress.completedMissions) completedMissions = Object.values(userProgress.completedMissions);
+        totalPoints = userProgress.totalPoints || 0;
+      } else {
+        console.log('⚠️ [STATS] No userProgress found for userId or doc id:', firebaseUserId);
+      }
     }
     let userWalletSnapshot = await firestoreDb.collection('userWallets').where('userId', '==', firebaseUserId).get();
     if (!userWalletSnapshot.empty) {
       userWallet = userWalletSnapshot.docs[0].data();
       console.log('🔍 [STATS] userWallet found:', userWallet);
     } else {
-      console.log('⚠️ [STATS] No userWallet found for userId:', firebaseUserId);
+      // Fallback: buscar por id (ID del documento)
+      let userWalletById = await firestoreDb.collection('userWallets').doc(firebaseUserId).get();
+      if (userWalletById.exists) {
+        userWallet = userWalletById.data();
+        console.log('🔍 [STATS] userWallet found by doc id:', userWallet);
+      } else {
+        console.log('⚠️ [STATS] No userWallet found for userId or doc id:', firebaseUserId);
+      }
     }
     const missionsSnapshot = await firestoreDb.collection('missions').get();
     const allMissions = [];
