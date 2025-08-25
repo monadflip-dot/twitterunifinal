@@ -1,57 +1,26 @@
 import React, { useEffect } from 'react';
-import favicon from '../images/favicon.png';
+import { signInWithPopup, signInWithRedirect, getRedirectResult } from 'firebase/auth';
 import { auth, twitterProvider } from './firebase';
-import { getAdditionalUserInfo, TwitterAuthProvider, signInWithRedirect, getRedirectResult, onAuthStateChanged, signInWithPopup } from 'firebase/auth';
+import favicon from './assets/favicon.png';
 
-const API_URL = process.env.REACT_APP_API_URL || '';
+const API_URL = import.meta.env.VITE_API_URL || 'https://www.pfcwhitelist.xyz';
 
-function LoginPage() {
-	// Procesar resultado de redirect si existe
+export default function LoginPage() {
 	useEffect(() => {
-		(async () => {
+		// Handle redirect result if user came from redirect
+		const handleRedirectResult = async () => {
 			try {
 				const result = await getRedirectResult(auth);
 				if (result) {
+					console.log('🔄 Redirect result received, processing...');
 					await handleResult(result);
-					window.location.reload();
 				}
-			} catch (e) {
-				console.error('Firebase Twitter redirect failed:', e?.code, e?.message);
+			} catch (error) {
+				console.error('Error handling redirect result:', error);
 			}
-		})();
-	}, []);
+		};
 
-	// Fallback: si ya hay usuario autenticado en Firebase pero no se procesó el resultado
-	useEffect(() => {
-		const unsub = onAuthStateChanged(auth, async (firebaseUser) => {
-			if (!firebaseUser) return;
-			try {
-				const idToken = await firebaseUser.getIdToken();
-				const response = await fetch(`${API_URL}/api/auth`, {
-					method: 'POST',
-					headers: { 'Content-Type': 'application/json' },
-					body: JSON.stringify({
-						idToken,
-						profile: {
-							uid: firebaseUser.uid,
-							displayName: firebaseUser.displayName,
-							photoURL: firebaseUser.photoURL,
-							email: firebaseUser.email
-						}
-					})
-				});
-				
-				if (response.ok) {
-					const data = await response.json();
-					// Store JWT token in localStorage
-					localStorage.setItem('jwt_token', data.token);
-				}
-				window.location.replace('/');
-			} catch (e) {
-				console.error('Auth state sync failed:', e?.code, e?.message);
-			}
-		});
-		return () => unsub();
+		handleRedirectResult();
 	}, []);
 
 	const handleResult = async (result) => {
@@ -76,6 +45,7 @@ function LoginPage() {
 			}
 			
 			// Redirect to backend Twitter OAuth
+			console.log('🔄 Redirecting to:', `${API_URL}/auth/twitter`);
 			window.location.href = `${API_URL}/auth/twitter`;
 			
 		} catch (error) {
@@ -86,23 +56,24 @@ function LoginPage() {
 
 	const handleTwitterLogin = async () => {
 		try {
-			// Limpia posibles estados previos de Firebase redirect
+			console.log('🐦 Starting Twitter login...');
+			
+			// Try popup first (better UX)
 			try {
-				Object.keys(window.localStorage || {}).forEach((k) => {
-					if (k.startsWith('firebase:')) localStorage.removeItem(k);
-				});
-			} catch {}
-			// Popup primero (mejor UX). Si falla, fallback a redirect
-			const result = await signInWithPopup(auth, twitterProvider);
-			await handleResult(result);
-			window.location.reload();
-		} catch (err) {
-			console.error('Popup login failed, falling back to redirect:', err?.code, err?.message);
-			try {
+				console.log('🔄 Attempting popup login...');
+				const result = await signInWithPopup(auth, twitterProvider);
+				console.log('✅ Popup login successful');
+				await handleResult(result);
+			} catch (popupError) {
+				console.log('⚠️ Popup failed, falling back to redirect:', popupError?.code);
+				
+				// Fallback to redirect
+				console.log('🔄 Falling back to redirect login...');
 				await signInWithRedirect(auth, twitterProvider);
-			} catch (e) {
-				alert('Twitter login failed. Please try again.');
 			}
+		} catch (err) {
+			console.error('💥 Twitter login failed:', err?.code, err?.message);
+			alert('Twitter login failed. Please try again.');
 		}
 	};
 
@@ -132,5 +103,3 @@ function LoginPage() {
 		</div>
 	);
 }
-
-export default LoginPage;

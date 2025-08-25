@@ -318,6 +318,8 @@ app.get('/auth/twitter', (req, res) => {
   console.log('🔑 Client ID:', process.env.TWITTER_CLIENT_ID ? 'Set' : 'Missing');
   console.log('🔑 Client Secret:', process.env.TWITTER_CLIENT_SECRET ? 'Set' : 'Missing');
   console.log('🔗 Callback URL:', process.env.TWITTER_CALLBACK_URL || 'Not set');
+  console.log('🌐 Request origin:', req.get('origin') || 'No origin');
+  console.log('🌐 Request referer:', req.get('referer') || 'No referer');
   
   // Generate state and code verifier for PKCE
   const state = Math.random().toString(36).substring(2, 15);
