@@ -187,8 +187,13 @@ const authenticateJWT = (req, res, next) => {
 // 🔐 REGISTER ROUTES IN CORRECT ORDER
 console.log('🔐 Registering routes...');
 
-// 0. TEST ENDPOINTS (for debugging)
-console.log('🧪 Registering test endpoints...');
+// 0. SIMPLE TEST ENDPOINTS (for debugging)
+console.log('🧪 Registering simple test endpoints...');
+
+app.get('/ping', (req, res) => {
+  console.log('🏓 Ping endpoint called');
+  res.json({ message: 'pong', timestamp: new Date().toISOString() });
+});
 
 app.get('/test', (req, res) => {
   console.log('🧪 Test endpoint called');
@@ -212,6 +217,36 @@ app.get('/auth/test', (req, res) => {
       '/auth/twitter/callback': 'Twitter OAuth callback',
       '/auth/test': 'This test endpoint'
     }
+  });
+});
+
+console.log('✅ Simple test endpoints registered successfully');
+
+// 🔍 NEW: Environment variables verification endpoint
+app.get('/env/check', (req, res) => {
+  console.log('🔍 Environment variables check endpoint called');
+  
+  const requiredVars = {
+    SESSION_SECRET: process.env.SESSION_SECRET ? '✅ Set' : '❌ Missing',
+    TWITTER_CLIENT_ID: process.env.TWITTER_CLIENT_ID ? '✅ Set' : '❌ Missing',
+    TWITTER_CLIENT_SECRET: process.env.TWITTER_CLIENT_SECRET ? '✅ Set' : '❌ Missing',
+    TWITTER_CALLBACK_URL: process.env.TWITTER_CALLBACK_URL ? '✅ Set' : '❌ Missing',
+    NODE_ENV: process.env.NODE_ENV || 'development',
+    PORT: process.env.PORT || '3001'
+  };
+  
+  const missingVars = Object.entries(requiredVars)
+    .filter(([key, value]) => value === '❌ Missing' && key !== 'NODE_ENV' && key !== 'PORT')
+    .map(([key]) => key);
+  
+  res.json({
+    success: missingVars.length === 0,
+    message: missingVars.length === 0 
+      ? 'All required environment variables are set' 
+      : `Missing required variables: ${missingVars.join(', ')}`,
+    environment: requiredVars,
+    missing: missingVars,
+    timestamp: new Date().toISOString()
   });
 });
 

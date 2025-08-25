@@ -15,6 +15,10 @@
   ],
   "routes": [
     {
+      "src": "/ping",
+      "dest": "backend/index.js"
+    },
+    {
       "src": "/api/(.*)",
       "dest": "backend/index.js"
     },
@@ -24,6 +28,10 @@
     },
     {
       "src": "/test",
+      "dest": "backend/index.js"
+    },
+    {
+      "src": "/env/check",
       "dest": "backend/index.js"
     },
     {
