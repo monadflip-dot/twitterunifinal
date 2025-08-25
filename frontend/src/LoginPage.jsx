@@ -106,9 +106,6 @@ export default function LoginPage() {
 		try {
 			console.log('🐦 Starting Twitter login...');
 			
-			// Clear auth state first to resolve token issues
-			await clearAuthState();
-			
 			// Try popup first (better UX)
 			try {
 				console.log('🔄 Attempting popup login...');
@@ -129,6 +126,14 @@ export default function LoginPage() {
 				if (popupError?.code === 'auth/unauthorized-domain') {
 					alert('Error: Dominio no autorizado. Contacta al administrador.');
 					return;
+				}
+				
+				// Only clear auth state if there's a token/authentication error
+				if (popupError?.code === 'auth/invalid-credential' || 
+					popupError?.code === 'auth/user-token-expired' ||
+					popupError?.message?.includes('token')) {
+					console.log('🔄 Clearing auth state due to token error...');
+					await clearAuthState();
 				}
 				
 				// Fallback to redirect for other errors

@@ -23,11 +23,10 @@ export const db = getFirestore(app);
 // Configure Twitter provider with specific settings
 export const twitterProvider = new TwitterAuthProvider();
 
-// 🔒 CONFIGURACIÓN ESPECÍFICA PARA OAUTH 1.0A
-// Agregar configuración específica para resolver problemas de token
+// 🔒 CONFIGURACIÓN OPTIMIZADA PARA OAUTH 1.0A
+// Permitir que Twitter recuerde la sesión del usuario
 twitterProvider.setCustomParameters({
-  'force_login': 'true', // Forzar nueva autenticación
-  'lang': 'en' // Idioma específico
+  'lang': 'en' // Solo idioma específico, sin forzar login
 });
 
 export default app;
