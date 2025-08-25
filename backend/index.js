@@ -788,4 +788,5 @@ app.listen(PORT, () => {
   console.log('🚀 ========================================');
   console.log('🚀 Server is ready to handle requests');
   console.log('🚀 ========================================');
+  console.log('🔄 Vercel deployment trigger - Backend updated');
 });
