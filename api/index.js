@@ -21,28 +21,6 @@ exports.ping = async (req, res) => {
   }
 };
 
-// Twitter OAuth initiation - Simplified for Firebase
-exports.twitterAuth = async (req, res) => {
-  console.log('🔐 Twitter auth endpoint called - redirecting to frontend for Firebase auth');
-  
-  try {
-    // Since Firebase handles Twitter authentication, we redirect back to frontend
-    // The frontend will use Firebase Auth with Twitter provider
-    
-    console.log('🔄 Redirecting to frontend for Firebase Twitter auth');
-    
-    // Redirect to frontend with instruction to use Firebase
-    res.redirect('https://www.pfcwhitelist.xyz?auth_method=firebase_twitter');
-    
-  } catch (error) {
-    console.error('💥 Error in Twitter auth redirect:', error);
-    res.status(500).json({
-      error: 'Twitter auth redirect failed',
-      details: error.message
-    });
-  }
-};
-
 // Firebase auth endpoint
 exports.firebaseAuth = async (req, res) => {
   console.log('📱 /api/auth/firebase endpoint called');
@@ -59,10 +37,10 @@ exports.firebaseAuth = async (req, res) => {
     console.log('✅ Firebase ID token verified for uid:', decoded.uid);
 
     if (!twitterAccessToken) {
-      console.log('⚠️ No Twitter access token, redirecting to Twitter OAuth');
+      console.log('⚠️ No Twitter access token, user needs to reconnect Twitter');
       return res.json({ 
         success: false, 
-        action: 'redirect_to_twitter',
+        action: 'reconnect_twitter',
         message: 'Twitter authentication required'
       });
     }
@@ -245,7 +223,9 @@ module.exports = async (req, res) => {
     }
     
     if (req.url === '/auth/twitter' || req.url === '/auth/twitter/') {
-      return await exports.twitterAuth(req, res);
+      // This route is no longer needed as Twitter OAuth is handled by Firebase
+      // Keeping it for now to avoid breaking existing links, but it will return 404
+      return res.status(404).json({ message: 'Twitter endpoint not found' });
     }
     
     if (req.url === '/auth/twitter/callback' || req.url === '/auth/twitter/callback/') {

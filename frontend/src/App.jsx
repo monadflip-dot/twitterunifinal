@@ -18,7 +18,6 @@ function App() {
     // Check if we have a token in URL (from Twitter OAuth callback)
     const urlParams = new URLSearchParams(window.location.search);
     const tokenFromUrl = urlParams.get('token');
-    const authMethod = urlParams.get('auth_method');
     
     if (tokenFromUrl) {
       console.log('🔑 JWT token found in URL, saving to localStorage');
@@ -31,27 +30,19 @@ function App() {
       checkAuthStatus();
     }
     
-    // Check if we need to initiate Firebase Twitter auth
-    if (authMethod === 'firebase_twitter') {
-      console.log('🔐 Initiating Firebase Twitter authentication...');
-      
-      // Remove auth_method from URL
-      window.history.replaceState({}, document.title, window.location.pathname);
-      
-      // Import and trigger Firebase Twitter login
-      import('./firebase').then(({ auth, twitterProvider }) => {
-        import('firebase/auth').then(({ signInWithPopup }) => {
-          signInWithPopup(auth, twitterProvider)
-            .then((result) => {
-              console.log('✅ Firebase Twitter auth successful:', result.user);
-              // Handle successful login
+    // Check for Firebase redirect result (when user returns from Twitter OAuth)
+    if (!tokenFromUrl) {
+      console.log('🔄 Checking for Firebase redirect result...');
+      import('./firebase').then(({ auth }) => {
+        import('firebase/auth').then(({ getRedirectResult }) => {
+          getRedirectResult(auth).then((result) => {
+            if (result) {
+              console.log('✅ Firebase redirect result found:', result.user);
               handleFirebaseLogin(result);
-            })
-            .catch((error) => {
-              console.error('❌ Firebase Twitter auth failed:', error);
-              // Handle error
-              alert('Twitter login failed: ' + error.message);
-            });
+            }
+          }).catch((error) => {
+            console.log('ℹ️ No Firebase redirect result or error:', error.message);
+          });
         });
       });
     }

@@ -29,24 +29,61 @@ export default function LoginPage() {
 			console.log('👤 User:', result.user?.displayName);
 			console.log('🔑 Access token exists:', !!result.credential?.accessToken);
 			
-			// 🔍 NEW: Always redirect to backend Twitter OAuth
-			// Firebase Auth with Twitter doesn't reliably provide access tokens
-			// So we'll use our backend's direct Twitter OAuth flow
-			console.log('🔄 Firebase auth successful, redirecting to backend Twitter OAuth...');
+			// Get Twitter access token from Firebase result
+			const credential = result.credential;
+			const accessToken = credential?.accessToken;
+			const accessSecret = credential?.secret;
 			
-			// Store basic user info temporarily
-			if (result.user) {
-				localStorage.setItem('temp_user_info', JSON.stringify({
-					uid: result.user.uid,
-					displayName: result.user.displayName,
-					photoURL: result.user.photoURL,
-					email: result.user.email
-				}));
+			console.log('🔑 Twitter access token obtained:', !!accessToken);
+			
+			if (!accessToken) {
+				console.log('⚠️ No Twitter access token, user needs to reconnect Twitter');
+				alert('Twitter access token not found. Please try logging in again.');
+				return;
 			}
 			
-			// Redirect to backend Twitter OAuth
-			console.log('🔄 Redirecting to:', `${API_URL}/auth/twitter`);
-			window.location.href = `${API_URL}/auth/twitter`;
+			// Get user profile from Twitter
+			const profile = {
+				id_str: result.user.providerData[0]?.uid,
+				screen_name: result.user.providerData[0]?.screenName,
+				name: result.user.providerData[0]?.displayName,
+				photoURL: result.user.providerData[0]?.photoURL
+			};
+			
+			console.log('👤 User profile:', profile);
+			
+			// Get Firebase ID token
+			const idToken = await result.user.getIdToken();
+			
+			// Send to backend for JWT generation
+			const response = await fetch('/api/auth/firebase', {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+				},
+				body: JSON.stringify({
+					idToken,
+					twitterAccessToken: accessToken,
+					twitterAccessSecret: accessSecret,
+					profile
+				}),
+			});
+			
+			if (response.ok) {
+				const data = await response.json();
+				console.log('✅ Backend authentication successful');
+				
+				// Save JWT token
+				localStorage.setItem('jwt_token', data.token);
+				
+				// Redirect to dashboard or reload page
+				window.location.reload();
+				
+			} else {
+				console.error('❌ Backend authentication failed:', response.status);
+				const errorData = await response.json();
+				alert('Authentication failed: ' + (errorData.error || 'Unknown error'));
+			}
 			
 		} catch (error) {
 			console.error('💥 Error in handleResult:', error);
