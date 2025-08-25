@@ -463,14 +463,13 @@ exports.getMissions = async (req, res) => {
     console.log('🔍 JWT user ID:', decoded.id);
     
     try {
-      // FIXED: Use the same comprehensive logic to detect completed missions
-      let completedMissions = [];
-      
-      // 1. First try to find the user in the users collection to get the correct Firebase ID
+      // 1. IMPROVED: Smart user search with multiple fallback strategies
       let firebaseUserId = null;
       try {
-        console.log('🔍 Searching for user in users collection for missions...');
-        const usersSnapshot = await firestoreDb
+        console.log('🔍 Smart user search in Firebase for missions...');
+        
+        // Strategy 1: Search by exact username match in users collection
+        let usersSnapshot = await firestoreDb
           .collection('users')
           .where('username', '==', decoded.username)
           .get();
@@ -478,17 +477,131 @@ exports.getMissions = async (req, res) => {
         if (!usersSnapshot.empty) {
           const userData = usersSnapshot.docs[0].data();
           firebaseUserId = userData.id;
-          console.log('✅ Found user in users collection with Firebase ID for missions:', firebaseUserId);
+          console.log('✅ Found user by exact username match in users collection for missions:', userData.username, 'Firebase ID:', firebaseUserId);
         } else {
-          console.log('⚠️ User not found in users collection for missions, trying with JWT ID');
-          firebaseUserId = decoded.id;
+          console.log('⚠️ No exact username match in users collection for missions, trying smart partial search...');
+          
+          // Strategy 2: Smart partial username search across ALL collections
+          const allUsersSnapshot = await firestoreDb.collection('users').get();
+          let bestMatch = null;
+          let bestScore = 0;
+          
+          allUsersSnapshot.forEach(doc => {
+            const userData = doc.data();
+            if (userData.username) {
+              const firebaseUsername = userData.username.toLowerCase();
+              const jwtUsername = decoded.username.toLowerCase();
+              
+              // Calculate match score
+              let score = 0;
+              
+              // Exact match gets highest score
+              if (firebaseUsername === jwtUsername) {
+                score = 100;
+              }
+              // JWT username is contained in Firebase username (e.g., "Robux" in "RobuxMemeCoin")
+              else if (firebaseUsername.includes(jwtUsername)) {
+                score = 80;
+              }
+              // Firebase username is contained in JWT username
+              else if (jwtUsername.includes(firebaseUsername)) {
+                score = 70;
+              }
+              // Partial overlap
+              else if (firebaseUsername.includes(jwtUsername.substring(0, Math.min(4, jwtUsername.length)))) {
+                score = 50;
+              }
+              // Check if displayName matches
+              else if (userData.displayName && userData.displayName.toLowerCase() === jwtUsername) {
+                score = 60;
+              }
+              
+              if (score > bestScore) {
+                bestScore = score;
+                bestMatch = { id: doc.id, ...userData, score };
+              }
+            }
+          });
+          
+          if (bestMatch && bestScore >= 50) {
+            firebaseUserId = bestMatch.id;
+            console.log('✅ Found user by smart partial match in users collection for missions:', bestMatch.username, 'Score:', bestScore, 'Firebase ID:', firebaseUserId);
+          } else {
+            console.log('⚠️ No smart match found in users collection for missions, trying displayName search...');
+            
+            // Strategy 3: Search by displayName in users collection
+            const displayNameSnapshot = await firestoreDb
+              .collection('users')
+              .where('displayName', '==', decoded.displayName || decoded.username)
+              .get();
+            
+            if (!displayNameSnapshot.empty) {
+              const userData = displayNameSnapshot.docs[0].data();
+              firebaseUserId = userData.id;
+              console.log('✅ Found user by displayName match in users collection for missions:', userData.displayName, 'Firebase ID:', firebaseUserId);
+            } else {
+              console.log('⚠️ No displayName match in users collection for missions, trying userProgress collection...');
+              
+              // Strategy 4: Search in userProgress collection by username
+              try {
+                const userProgressSearchSnapshot = await firestoreDb
+                  .collection('userProgress')
+                  .where('username', '==', decoded.username)
+                  .get();
+                
+                if (!userProgressSearchSnapshot.empty) {
+                  const userProgressData = userProgressSearchSnapshot.docs[0].data();
+                  firebaseUserId = userProgressData.userId;
+                  console.log('✅ Found user by username in userProgress collection for missions:', userProgressData.username, 'Firebase ID:', firebaseUserId);
+                } else {
+                  console.log('⚠️ No username match in userProgress collection for missions, trying partial match...');
+                  
+                  // Strategy 5: Partial search in userProgress collection
+                  const allUserProgressSnapshot = await firestoreDb.collection('userProgress').get();
+                  let userProgressBestMatch = null;
+                  let userProgressBestScore = 0;
+                  
+                  allUserProgressSnapshot.forEach(doc => {
+                    const userProgressData = doc.data();
+                    if (userProgressData.username) {
+                      const firebaseUsername = userProgressData.username.toLowerCase();
+                      const jwtUsername = decoded.username.toLowerCase();
+                      
+                      let score = 0;
+                      if (firebaseUsername === jwtUsername) score = 100;
+                      else if (firebaseUsername.includes(jwtUsername)) score = 80;
+                      else if (jwtUsername.includes(firebaseUsername)) score = 70;
+                      else if (firebaseUsername.includes(jwtUsername.substring(0, Math.min(4, jwtUsername.length)))) score = 50;
+                      
+                      if (score > userProgressBestScore) {
+                        userProgressBestScore = score;
+                        userProgressBestMatch = { ...userProgressData, score };
+                      }
+                    }
+                  });
+                  
+                  if (userProgressBestMatch && userProgressBestScore >= 50) {
+                    firebaseUserId = userProgressBestMatch.userId;
+                    console.log('✅ Found user by partial match in userProgress collection for missions:', userProgressBestMatch.username, 'Score:', userProgressBestScore, 'Firebase ID:', firebaseUserId);
+                  } else {
+                    console.log('⚠️ No match found in any collection for missions, using JWT ID as fallback...');
+                    firebaseUserId = decoded.id;
+                  }
+                }
+              } catch (userProgressError) {
+                console.log('⚠️ Error searching userProgress collection for missions:', userProgressError.message);
+                firebaseUserId = decoded.id;
+              }
+            }
+          }
         }
+        
       } catch (error) {
-        console.log('⚠️ Error searching users collection for missions:', error.message);
+        console.log('⚠️ Error in smart user search for missions:', error.message);
         firebaseUserId = decoded.id;
       }
       
-      console.log('🎯 Using Firebase User ID for missions queries:', firebaseUserId);
+      console.log('🎯 Final Firebase User ID for missions queries:', firebaseUserId);
       
       // 2. First try userProgress collection (aggregated data)
       try {
@@ -574,7 +687,8 @@ exports.getMissions = async (req, res) => {
         count: missions.length,
         completedMissions: completedMissions,
         userProgress: { completedMissions: completedMissions },
-        firebaseUserId: firebaseUserId
+        firebaseUserId: firebaseUserId,
+        searchStrategy: 'multiple_strategies_used'
       });
       
     } catch (firebaseError) {
@@ -639,6 +753,7 @@ exports.getUserStats = async (req, res) => {
     const decoded = jwt.verify(token, process.env.SESSION_SECRET || 'your-secret-key');
     console.log('✅ JWT token verified for user:', decoded.username);
     console.log('🔍 JWT user ID:', decoded.id);
+    console.log('🔍 JWT displayName:', decoded.displayName);
     
     try {
       // FIXED: Check ALL possible collections for user progress
@@ -647,11 +762,13 @@ exports.getUserStats = async (req, res) => {
       let totalPoints = 0;
       let userWallet = null;
       
-      // 1. First try to find the user in the users collection to get the correct Firebase ID
+      // 1. IMPROVED: Smart user search with multiple fallback strategies
       let firebaseUserId = null;
       try {
-        console.log('🔍 Searching for user in users collection...');
-        const usersSnapshot = await firestoreDb
+        console.log('🔍 Smart user search in Firebase...');
+        
+        // Strategy 1: Search by exact username match in users collection
+        let usersSnapshot = await firestoreDb
           .collection('users')
           .where('username', '==', decoded.username)
           .get();
@@ -659,17 +776,131 @@ exports.getUserStats = async (req, res) => {
         if (!usersSnapshot.empty) {
           const userData = usersSnapshot.docs[0].data();
           firebaseUserId = userData.id;
-          console.log('✅ Found user in users collection with Firebase ID:', firebaseUserId);
+          console.log('✅ Found user by exact username match in users collection:', userData.username, 'Firebase ID:', firebaseUserId);
         } else {
-          console.log('⚠️ User not found in users collection, trying with JWT ID');
-          firebaseUserId = decoded.id;
+          console.log('⚠️ No exact username match in users collection, trying smart partial search...');
+          
+          // Strategy 2: Smart partial username search across ALL collections
+          const allUsersSnapshot = await firestoreDb.collection('users').get();
+          let bestMatch = null;
+          let bestScore = 0;
+          
+          allUsersSnapshot.forEach(doc => {
+            const userData = doc.data();
+            if (userData.username) {
+              const firebaseUsername = userData.username.toLowerCase();
+              const jwtUsername = decoded.username.toLowerCase();
+              
+              // Calculate match score
+              let score = 0;
+              
+              // Exact match gets highest score
+              if (firebaseUsername === jwtUsername) {
+                score = 100;
+              }
+              // JWT username is contained in Firebase username (e.g., "Robux" in "RobuxMemeCoin")
+              else if (firebaseUsername.includes(jwtUsername)) {
+                score = 80;
+              }
+              // Firebase username is contained in JWT username
+              else if (jwtUsername.includes(firebaseUsername)) {
+                score = 70;
+              }
+              // Partial overlap
+              else if (firebaseUsername.includes(jwtUsername.substring(0, Math.min(4, jwtUsername.length))) {
+                score = 50;
+              }
+              // Check if displayName matches
+              else if (userData.displayName && userData.displayName.toLowerCase() === jwtUsername) {
+                score = 60;
+              }
+              
+              if (score > bestScore) {
+                bestScore = score;
+                bestMatch = { id: doc.id, ...userData, score };
+              }
+            }
+          });
+          
+          if (bestMatch && bestScore >= 50) {
+            firebaseUserId = bestMatch.id;
+            console.log('✅ Found user by smart partial match in users collection:', bestMatch.username, 'Score:', bestScore, 'Firebase ID:', firebaseUserId);
+          } else {
+            console.log('⚠️ No smart match found in users collection, trying displayName search...');
+            
+            // Strategy 3: Search by displayName in users collection
+            const displayNameSnapshot = await firestoreDb
+              .collection('users')
+              .where('displayName', '==', decoded.displayName || decoded.username)
+              .get();
+            
+            if (!displayNameSnapshot.empty) {
+              const userData = displayNameSnapshot.docs[0].data();
+              firebaseUserId = userData.id;
+              console.log('✅ Found user by displayName match in users collection:', userData.displayName, 'Firebase ID:', firebaseUserId);
+            } else {
+              console.log('⚠️ No displayName match in users collection, trying userProgress collection...');
+              
+              // Strategy 4: Search in userProgress collection by username
+              try {
+                const userProgressSearchSnapshot = await firestoreDb
+                  .collection('userProgress')
+                  .where('username', '==', decoded.username)
+                  .get();
+                
+                if (!userProgressSearchSnapshot.empty) {
+                  const userProgressData = userProgressSearchSnapshot.docs[0].data();
+                  firebaseUserId = userProgressData.userId;
+                  console.log('✅ Found user by username in userProgress collection:', userProgressData.username, 'Firebase ID:', firebaseUserId);
+                } else {
+                  console.log('⚠️ No username match in userProgress collection, trying partial match...');
+                  
+                  // Strategy 5: Partial search in userProgress collection
+                  const allUserProgressSnapshot = await firestoreDb.collection('userProgress').get();
+                  let userProgressBestMatch = null;
+                  let userProgressBestScore = 0;
+                  
+                  allUserProgressSnapshot.forEach(doc => {
+                    const userProgressData = doc.data();
+                    if (userProgressData.username) {
+                      const firebaseUsername = userProgressData.username.toLowerCase();
+                      const jwtUsername = decoded.username.toLowerCase();
+                      
+                      let score = 0;
+                      if (firebaseUsername === jwtUsername) score = 100;
+                      else if (firebaseUsername.includes(jwtUsername)) score = 80;
+                      else if (jwtUsername.includes(firebaseUsername)) score = 70;
+                      else if (firebaseUsername.includes(jwtUsername.substring(0, Math.min(4, jwtUsername.length)))) score = 50;
+                      
+                      if (score > userProgressBestScore) {
+                        userProgressBestScore = score;
+                        userProgressBestMatch = { ...userProgressData, score };
+                      }
+                    }
+                  });
+                  
+                  if (userProgressBestMatch && userProgressBestScore >= 50) {
+                    firebaseUserId = userProgressBestMatch.userId;
+                    console.log('✅ Found user by partial match in userProgress collection:', userProgressBestMatch.username, 'Score:', userProgressBestScore, 'Firebase ID:', firebaseUserId);
+                  } else {
+                    console.log('⚠️ No match found in any collection, using JWT ID as fallback...');
+                    firebaseUserId = decoded.id;
+                  }
+                }
+              } catch (userProgressError) {
+                console.log('⚠️ Error searching userProgress collection:', userProgressError.message);
+                firebaseUserId = decoded.id;
+              }
+            }
+          }
         }
+        
       } catch (error) {
-        console.log('⚠️ Error searching users collection:', error.message);
+        console.log('⚠️ Error in smart user search:', error.message);
         firebaseUserId = decoded.id;
       }
       
-      console.log('🎯 Using Firebase User ID for queries:', firebaseUserId);
+      console.log('🎯 Final Firebase User ID for queries:', firebaseUserId);
       
       // 2. Check userProgress collection (aggregated data)
       try {
@@ -787,7 +1018,8 @@ exports.getUserStats = async (req, res) => {
         userProgress: userProgress,
         userWallet: userWallet,
         allMissions: allMissions,
-        firebaseUserId: firebaseUserId
+        firebaseUserId: firebaseUserId,
+        searchStrategy: 'smart_search_with_fallbacks'
       };
       
       console.log('✅ Final user stats calculated:', stats);
