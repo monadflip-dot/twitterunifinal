@@ -115,6 +115,73 @@ async function getUserProfile(accessToken) {
   }
 }
 
+// --- FUNCION AUXILIAR: Búsqueda inteligente de usuario en Firebase ---
+async function findFirebaseUserId(decoded, firestoreDb) {
+  // 1. Buscar por username exacto en users
+  let usersSnapshot = await firestoreDb.collection('users').where('username', '==', decoded.username).get();
+  if (!usersSnapshot.empty) {
+    return usersSnapshot.docs[0].data().id;
+  }
+  // 2. Buscar por displayName en users
+  let displayNameSnapshot = await firestoreDb.collection('users').where('displayName', '==', decoded.displayName || decoded.username).get();
+  if (!displayNameSnapshot.empty) {
+    return displayNameSnapshot.docs[0].data().id;
+  }
+  // 3. Buscar coincidencia parcial en users
+  let allUsersSnapshot = await firestoreDb.collection('users').get();
+  let bestMatch = null;
+  let bestScore = 0;
+  allUsersSnapshot.forEach(doc => {
+    const userData = doc.data();
+    if (userData.username) {
+      const firebaseUsername = userData.username.toLowerCase();
+      const jwtUsername = decoded.username.toLowerCase();
+      let score = 0;
+      if (firebaseUsername === jwtUsername) score = 100;
+      else if (firebaseUsername.includes(jwtUsername)) score = 80;
+      else if (jwtUsername.includes(firebaseUsername)) score = 70;
+      else if (firebaseUsername.includes(jwtUsername.substring(0, Math.min(4, jwtUsername.length)))) score = 50;
+      if (score > bestScore) {
+        bestScore = score;
+        bestMatch = { id: doc.id, ...userData, score };
+      }
+    }
+  });
+  if (bestMatch && bestScore >= 50) {
+    return bestMatch.id;
+  }
+  // 4. Buscar en userProgress por username
+  let userProgressSnapshot = await firestoreDb.collection('userProgress').where('username', '==', decoded.username).get();
+  if (!userProgressSnapshot.empty) {
+    return userProgressSnapshot.docs[0].data().userId;
+  }
+  // 5. Buscar coincidencia parcial en userProgress
+  let allUserProgressSnapshot = await firestoreDb.collection('userProgress').get();
+  let userProgressBestMatch = null;
+  let userProgressBestScore = 0;
+  allUserProgressSnapshot.forEach(doc => {
+    const userProgressData = doc.data();
+    if (userProgressData.username) {
+      const firebaseUsername = userProgressData.username.toLowerCase();
+      const jwtUsername = decoded.username.toLowerCase();
+      let score = 0;
+      if (firebaseUsername === jwtUsername) score = 100;
+      else if (firebaseUsername.includes(jwtUsername)) score = 80;
+      else if (jwtUsername.includes(firebaseUsername)) score = 70;
+      else if (firebaseUsername.includes(jwtUsername.substring(0, Math.min(4, jwtUsername.length)))) score = 50;
+      if (score > userProgressBestScore) {
+        userProgressBestScore = score;
+        userProgressBestMatch = { ...userProgressData, score };
+      }
+    }
+  });
+  if (userProgressBestMatch && userProgressBestScore >= 50) {
+    return userProgressBestMatch.userId;
+  }
+  // 6. Fallback: usar el id del JWT
+  return decoded.id;
+}
+
 // --- ENDPOINT: /api/missions ---
 exports.getMissions = async (req, res) => {
   try {
@@ -122,14 +189,7 @@ exports.getMissions = async (req, res) => {
     if (!token) return res.status(401).json({ error: 'No token provided' });
     const decoded = jwt.verify(token, process.env.SESSION_SECRET || 'your-secret-key');
     // --- Búsqueda inteligente de usuario en Firebase ---
-    let firebaseUserId = null;
-    let usersSnapshot = await firestoreDb.collection('users').where('username', '==', decoded.username).get();
-    if (!usersSnapshot.empty) {
-      firebaseUserId = usersSnapshot.docs[0].data().id;
-    } else {
-      // Fallback: usar decoded.id
-      firebaseUserId = decoded.id;
-    }
+    let firebaseUserId = await findFirebaseUserId(decoded, firestoreDb);
     // --- Buscar misiones completadas ---
     let completedMissions = [];
     let userProgressSnapshot = await firestoreDb.collection('userProgress').where('userId', '==', firebaseUserId).get();
@@ -167,13 +227,7 @@ exports.getUserStats = async (req, res) => {
     const token = req.headers.authorization?.split(' ')[1] || req.cookies?.token || req.query?.token;
     if (!token) return res.status(401).json({ error: 'No token provided' });
     const decoded = jwt.verify(token, process.env.SESSION_SECRET || 'your-secret-key');
-    let firebaseUserId = null;
-    let usersSnapshot = await firestoreDb.collection('users').where('username', '==', decoded.username).get();
-    if (!usersSnapshot.empty) {
-      firebaseUserId = usersSnapshot.docs[0].data().id;
-    } else {
-      firebaseUserId = decoded.id;
-    }
+    let firebaseUserId = await findFirebaseUserId(decoded, firestoreDb);
     let completedMissions = [];
     let totalPoints = 0;
     let userWallet = null;
