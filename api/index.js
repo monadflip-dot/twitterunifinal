@@ -117,6 +117,11 @@ async function getUserProfile(accessToken) {
 
 // --- FUNCION AUXILIAR: Búsqueda inteligente de usuario en Firebase ---
 async function findFirebaseUserId(decoded, firestoreDb) {
+  // 0. Buscar por decoded.id como documento en users
+  let userByIdDoc = await firestoreDb.collection('users').doc(decoded.id).get();
+  if (userByIdDoc.exists) {
+    return decoded.id;
+  }
   // 1. Buscar por username exacto en users
   let usersSnapshot = await firestoreDb.collection('users').where('username', '==', decoded.username).get();
   if (!usersSnapshot.empty) {
