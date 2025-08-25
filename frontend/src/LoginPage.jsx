@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { signInWithPopup, signInWithRedirect, getRedirectResult } from 'firebase/auth';
 import { auth, twitterProvider } from './firebase';
-import favicon from './assets/favicon.png';
+import favicon from '../images/favicon.png';
 
 const API_URL = import.meta.env.VITE_API_URL || 'https://www.pfcwhitelist.xyz';
 
