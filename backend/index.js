@@ -352,7 +352,7 @@ app.get('/auth/twitter', (req, res) => {
     `code_challenge=${generateCodeChallenge(codeVerifier)}`;
   
   console.log('🔗 Redirecting to:', authUrl);
-  console.log('🔒 Scopes solicitados: tweet.read, users.read (permisos mínimos)');
+  console.log('🔒 Requested scopes: tweet.read, users.read (minimum permissions)');
   res.redirect(authUrl);
 });
 

@@ -65,7 +65,7 @@ function LoginPage() {
 			const accessSecret = result.credential?.accessSecret;
 			
 			if (!idToken) {
-				alert('No se pudo obtener el token de Firebase. Por favor, intenta de nuevo.');
+				alert('Could not get Firebase token. Please try again.');
 				return;
 			}
 			
@@ -102,22 +102,22 @@ function LoginPage() {
 						console.log('⚠️ No token received from backend');
 					}
 					
-					alert('¡Autenticación exitosa!');
+					alert('Authentication successful!');
 					window.location.reload();
 				} else if (data.action === 'redirect_to_twitter') {
 					console.log('🔄 Redirecting to Twitter OAuth...');
 					window.location.href = `${API_URL}/auth/twitter`;
 				} else {
-					alert('Error en la autenticación: ' + (data.message || 'Error desconocido'));
+					alert('Authentication error: ' + (data.message || 'Unknown error'));
 				}
 			} else {
 				const errorText = await response.text();
 				console.error('❌ Backend auth failed:', response.status, errorText);
-				alert('Error en la autenticación del backend. Por favor, intenta de nuevo.');
+				alert('Backend authentication failed. Please try again.');
 			}
 		} catch (error) {
 			console.error('💥 Error in handleResult:', error);
-			alert('Error durante la autenticación. Por favor, intenta de nuevo.');
+			alert('Error during authentication. Please try again.');
 		}
 	};
 

@@ -101,16 +101,16 @@ function Dashboard({ user, onLogout }) {
     setLoadingMissionId(missionId);
     
     try {
-      // Debug: Verificar token antes de completar misión
+      // Debug: Check token before completing mission
       const token = localStorage.getItem('jwt_token');
-      console.log('🔍 Debug - Token antes de completar misión:');
+      console.log('🔍 Debug - Token before completing mission:');
       console.log('🎫 Token exists:', !!token);
       if (token) {
         console.log('🎫 Token (first 50 chars):', token.substring(0, 50) + '...');
         console.log('🎫 Token length:', token.length);
       }
       
-      // Simular delay de 5 segundos
+      // Simulate 5 second delay
       await new Promise(resolve => setTimeout(resolve, 5000));
       
       const response = await fetch(`${API_URL}/api/missions/${missionId}/complete`, {
@@ -162,8 +162,8 @@ function Dashboard({ user, onLogout }) {
           
           // Show user-friendly message
           const shouldReconnect = confirm(
-            'Tu sesión de Twitter ha expirado o no es válida. ' +
-            '¿Quieres volver a conectarte con Twitter para completar misiones?'
+            'Your Twitter session has expired or is invalid. ' +
+            'Would you like to reconnect with Twitter to complete missions?'
           );
           
           if (shouldReconnect) {
