@@ -479,8 +479,10 @@ module.exports = async (req, res) => {
       }
     }
     
-    if (req.url === '/auth/callback' || req.url === '/auth/callback/') {
+    // FIXED: Handle callback URL with query parameters
+    if (req.url.startsWith('/auth/callback')) {
       if (req.method === 'GET') {
+        console.log('🔄 OAuth callback detected, processing...');
         return await exports.twitterOAuth2Callback(req, res);
       }
     }
