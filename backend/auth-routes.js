@@ -61,10 +61,10 @@ router.post('/firebase', async (req, res) => {
     }
 
     // Issue our JWT session cookie
-    const token = jwt.sign(user, process.env.SESSION_SECRET || 'your-secret-key', { expiresIn: '24h' });
+    const token = jwt.sign(user, require('./config').SESSION_SECRET, { expiresIn: '24h' });
     res.cookie('jwt', token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
+      secure: require('./config').NODE_ENV === 'production',
       sameSite: 'lax',
       maxAge: 24 * 60 * 60 * 1000
     });
@@ -86,7 +86,7 @@ router.post('/logout', (req, res) => {
   try {
     res.clearCookie('jwt', {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
+      secure: require('./config').NODE_ENV === 'production',
       sameSite: 'lax'
     });
     return res.json({ success: true });

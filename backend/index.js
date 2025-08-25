@@ -1,4 +1,13 @@
 require('dotenv').config();
+const config = require('./config');
+
+// Log configuration for debugging
+console.log('🔧 Configuration loaded:');
+console.log('🐦 Twitter Client ID:', config.TWITTER_CLIENT_ID ? 'SET' : 'MISSING');
+console.log('🔑 Twitter Client Secret:', config.TWITTER_CLIENT_SECRET ? 'SET' : 'MISSING');
+console.log('🔗 Twitter Callback URL:', config.TWITTER_CALLBACK_URL);
+console.log('🔐 Session Secret:', config.SESSION_SECRET ? 'SET' : 'MISSING');
+
 const express = require('express');
 const cors = require('cors');
 const passport = require('./auth');
@@ -88,7 +97,7 @@ const oauthStates = new Map();
 // Middleware
 app.use(cors({
   origin: [
-    process.env.FRONTEND_URL || 'https://www.pfcwhitelist.xyz',
+    'https://www.pfcwhitelist.xyz',
     'https://pfcwhitelist.xyz',
     'https://www.pfcwhitelist.xyz/',
     'https://pfcwhitelist.xyz/',
@@ -299,7 +308,7 @@ app.get('/auth/twitter/callback', async (req, res) => {
     }
     
     // Issue JWT session cookie
-    const token = jwt.sign(user, process.env.SESSION_SECRET || 'your-secret-key', { expiresIn: '24h' });
+         const token = jwt.sign(user, config.SESSION_SECRET, { expiresIn: '24h' });
     
     // Redirect to frontend with token
     res.redirect(`https://www.pfcwhitelist.xyz?token=${encodeURIComponent(token)}`);
