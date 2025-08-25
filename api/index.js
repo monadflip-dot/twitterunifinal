@@ -461,31 +461,55 @@ exports.getMissions = async (req, res) => {
     const decoded = jwt.verify(token, process.env.SESSION_SECRET || 'your-secret-key');
     console.log('✅ JWT token verified for user:', decoded.username);
     
-    // Get missions from Firebase
     try {
+      // Get user's progress from Firebase to check completed missions
+      const userProgressSnapshot = await firestoreDb
+        .collection('userProgress')
+        .where('userId', '==', decoded.id)
+        .get();
+      
+      let userProgress = null;
+      if (!userProgressSnapshot.empty) {
+        userProgress = userProgressSnapshot.docs[0].data();
+        console.log('✅ User progress found:', userProgress);
+      }
+      
+      // Get missions from Firebase
       const missionsSnapshot = await firestoreDb.collection('missions').get();
       const missions = [];
       
       missionsSnapshot.forEach(doc => {
         const missionData = doc.data();
+        
+        // Check if this mission is completed by the user
+        let isCompleted = false;
+        if (userProgress && userProgress.completedMissions) {
+          // Check if mission ID exists in completedMissions object
+          const missionId = doc.id;
+          isCompleted = userProgress.completedMissions.hasOwnProperty(missionId) || 
+                       Object.values(userProgress.completedMissions).includes(parseInt(missionId));
+        }
+        
         missions.push({
           id: doc.id,
           title: missionData.title || 'Mission',
           description: missionData.description || 'Complete this mission',
           points: missionData.points || 10,
-          completed: missionData.completed || false,
+          completed: isCompleted, // Use the real completion status
           type: missionData.type || 'general',
           requirements: missionData.requirements || [],
           ...missionData
         });
       });
       
-      console.log('✅ Missions loaded from Firebase:', missions.length);
+      console.log('✅ Missions loaded from Firebase with completion status:', missions.length);
+      console.log('✅ Completed missions count:', missions.filter(m => m.completed).length);
       
       return res.json({
         success: true,
         missions: missions,
-        count: missions.length
+        count: missions.length,
+        userProgress: userProgress
       });
       
     } catch (firebaseError) {
