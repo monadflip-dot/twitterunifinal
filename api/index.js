@@ -177,9 +177,24 @@ exports.twitterOAuth2Authorize = async (req, res) => {
     const clientId = process.env.TWITTER_CLIENT_ID || process.env.TWITTER_CONSUMER_KEY;
     const redirectUri = 'https://www.pfcwhitelist.xyz/auth/callback';
     
+    console.log('🔍 Debug info:');
+    console.log('🔍 TWITTER_CLIENT_ID:', process.env.TWITTER_CLIENT_ID ? '✅ Set' : '❌ Missing');
+    console.log('🔍 TWITTER_CLIENT_SECRET:', process.env.TWITTER_CLIENT_SECRET ? '✅ Set' : '❌ Missing');
+    console.log('🔍 TWITTER_CONSUMER_KEY:', process.env.TWITTER_CONSUMER_KEY ? '✅ Set' : '❌ Missing');
+    console.log('🔍 Using OAuth version:', process.env.TWITTER_CLIENT_ID ? '2.0' : '1.0a (fallback)');
+    
     if (!clientId) {
-      console.error('❌ TWITTER_CLIENT_ID not configured');
-      return res.status(500).json({ error: 'Twitter OAuth 2.0 configuration missing' });
+      console.error('❌ No Twitter credentials configured');
+      return res.status(500).json({ 
+        error: 'Twitter OAuth 2.0 configuration missing',
+        details: {
+          clientId: process.env.TWITTER_CLIENT_ID ? 'Set' : 'Missing',
+          clientSecret: process.env.TWITTER_CLIENT_SECRET ? 'Set' : 'Missing',
+          consumerKey: process.env.TWITTER_CONSUMER_KEY ? 'Set' : 'Missing',
+          consumerSecret: process.env.TWITTER_CONSUMER_SECRET ? 'Set' : 'Missing'
+        },
+        solution: 'Add TWITTER_CLIENT_ID and TWITTER_CLIENT_SECRET to Vercel environment variables'
+      });
     }
     
     // Generate state parameter for security
@@ -196,6 +211,7 @@ exports.twitterOAuth2Authorize = async (req, res) => {
     console.log('🔗 Generated OAuth 2.0 authorization URL');
     console.log('🔗 Client ID:', clientId);
     console.log('🔗 Redirect URI:', redirectUri);
+    console.log('🔗 Full Auth URL:', authUrl);
     console.log('🔗 Using OAuth 2.0 variables:', !!process.env.TWITTER_CLIENT_ID ? '✅ CLIENT_ID' : '⚠️ CONSUMER_KEY (fallback)');
     
     return res.json({
@@ -206,13 +222,22 @@ exports.twitterOAuth2Authorize = async (req, res) => {
         clientId: clientId ? '✅ Set' : '❌ Missing',
         redirectUri: redirectUri,
         state: state,
-        oauthVersion: process.env.TWITTER_CLIENT_ID ? '2.0' : '1.0a (fallback)'
+        oauthVersion: process.env.TWITTER_CLIENT_ID ? '2.0' : '1.0a (fallback)',
+        credentials: {
+          clientId: !!process.env.TWITTER_CLIENT_ID,
+          clientSecret: !!process.env.TWITTER_CLIENT_SECRET,
+          consumerKey: !!process.env.TWITTER_CONSUMER_KEY,
+          consumerSecret: !!process.env.TWITTER_CONSUMER_SECRET
+        }
       }
     });
     
   } catch (err) {
     console.error('💥 Error in Twitter OAuth 2.0 authorize:', err);
-    return res.status(500).json({ error: 'Failed to generate authorization URL' });
+    return res.status(500).json({ 
+      error: 'Failed to generate authorization URL',
+      details: err.message
+    });
   }
 };
 
@@ -308,8 +333,15 @@ exports.debugTwitter = async (req, res) => {
       timestamp: new Date().toISOString(),
       environment: process.env.NODE_ENV || 'development',
       twitterConfig: {
+        // OAuth 2.0 variables (PRIMARY)
+        clientId: process.env.TWITTER_CLIENT_ID ? '✅ Set' : '❌ Missing',
+        clientSecret: process.env.TWITTER_CLIENT_SECRET ? '✅ Set' : '❌ Missing',
+        
+        // OAuth 1.0a variables (FALLBACK)
         consumerKey: process.env.TWITTER_CONSUMER_KEY ? '✅ Set' : '❌ Missing',
         consumerSecret: process.env.TWITTER_CONSUMER_SECRET ? '✅ Set' : '❌ Missing',
+        
+        // Session secret
         sessionSecret: process.env.SESSION_SECRET ? '✅ Set' : '❌ Missing'
       },
       firebaseConfig: {
@@ -317,7 +349,17 @@ exports.debugTwitter = async (req, res) => {
         clientEmail: process.env.FIREBASE_CLIENT_EMAIL ? '✅ Set' : '❌ Missing',
         privateKey: process.env.FIREBASE_PRIVATE_KEY ? '✅ Set' : '❌ Missing'
       },
-      note: 'Check Twitter Developer Portal for OAuth callback URLs and app permissions'
+      oauthFlow: {
+        currentVersion: process.env.TWITTER_CLIENT_ID ? '2.0' : '1.0a (fallback)',
+        callbackUrl: 'https://www.pfcwhitelist.xyz/auth/callback',
+        scope: 'tweet.read users.read'
+      },
+      recommendations: [
+        '1. Add TWITTER_CLIENT_ID and TWITTER_CLIENT_SECRET to Vercel environment variables',
+        '2. Ensure Twitter Developer Portal has OAuth 2.0 enabled',
+        '3. Verify callback URL matches: https://www.pfcwhitelist.xyz/auth/callback',
+        '4. Check Twitter app type is "Web App, Automated App or Bot"'
+      ]
     };
     
     return res.json({
