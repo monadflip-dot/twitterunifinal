@@ -227,19 +227,28 @@ exports.getUserStats = async (req, res) => {
     const token = req.headers.authorization?.split(' ')[1] || req.cookies?.token || req.query?.token;
     if (!token) return res.status(401).json({ error: 'No token provided' });
     const decoded = jwt.verify(token, process.env.SESSION_SECRET || 'your-secret-key');
+    console.log('🔍 [STATS] JWT username:', decoded.username);
+    console.log('🔍 [STATS] JWT displayName:', decoded.displayName);
     let firebaseUserId = await findFirebaseUserId(decoded, firestoreDb);
+    console.log('🔍 [STATS] Firebase userId found:', firebaseUserId);
     let completedMissions = [];
     let totalPoints = 0;
     let userWallet = null;
     let userProgressSnapshot = await firestoreDb.collection('userProgress').where('userId', '==', firebaseUserId).get();
     if (!userProgressSnapshot.empty) {
       const userProgress = userProgressSnapshot.docs[0].data();
+      console.log('🔍 [STATS] userProgress found:', userProgress);
       if (userProgress.completedMissions) completedMissions = Object.values(userProgress.completedMissions);
       totalPoints = userProgress.totalPoints || 0;
+    } else {
+      console.log('⚠️ [STATS] No userProgress found for userId:', firebaseUserId);
     }
     let userWalletSnapshot = await firestoreDb.collection('userWallets').where('userId', '==', firebaseUserId).get();
     if (!userWalletSnapshot.empty) {
       userWallet = userWalletSnapshot.docs[0].data();
+      console.log('🔍 [STATS] userWallet found:', userWallet);
+    } else {
+      console.log('⚠️ [STATS] No userWallet found for userId:', firebaseUserId);
     }
     const missionsSnapshot = await firestoreDb.collection('missions').get();
     const allMissions = [];
@@ -255,8 +264,10 @@ exports.getUserStats = async (req, res) => {
       allMissions,
       firebaseUserId
     };
+    console.log('✅ [STATS] Final stats:', stats);
     return res.json({ success: true, stats });
   } catch (err) {
+    console.error('💥 [STATS] Error:', err);
     return res.status(401).json({ error: 'Invalid or expired token' });
   }
 };
