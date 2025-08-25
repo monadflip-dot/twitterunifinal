@@ -29,18 +29,13 @@ setPersistence(auth, browserLocalPersistence)
     console.error('❌ Error setting Firebase persistence:', error);
   });
 
-// Configure Twitter provider with specific settings
+// Configure Twitter provider - CONFIGURACIÓN SIMPLE Y FUNCIONAL
 export const twitterProvider = new TwitterAuthProvider();
 
-// 🔒 CONFIGURACIÓN OPTIMIZADA PARA OAUTH 1.0A + SESSION PERSISTENCE
-// Configuración específica para mantener sesiones y reducir re-autenticación
+// 🔒 CONFIGURACIÓN MÍNIMA PARA OAUTH 1.0A
+// Solo parámetros esenciales que funcionan con Firebase
 twitterProvider.setCustomParameters({
-  'lang': 'en', // Idioma específico
-  'force_login': 'false', // NO forzar login, usar sesión existente si es posible
-  'screen_name': '', // Permitir que Twitter use la sesión actual
-  'x_auth_access_type': 'read', // Solo permisos de lectura
-  'oauth_callback': 'https://www.pfcwhitelist.xyz', // Callback específico
-  'include_email': 'false' // No solicitar email para reducir permisos
+  'lang': 'en' // Solo idioma, sin parámetros complejos
 });
 
 export default app;

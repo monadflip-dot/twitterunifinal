@@ -155,21 +155,34 @@ export default function LoginPage() {
 				return;
 			}
 			
-			// Use redirect instead of popup for better session handling
-			console.log('🔄 Starting redirect login for better session handling...');
+			// Use simple popup login - más directo y funcional
+			console.log('🔄 Starting popup login...');
 			try {
-				await signInWithRedirect(auth, twitterProvider);
-			} catch (redirectError) {
-				console.error('💥 Redirect failed:', redirectError);
+				const result = await signInWithPopup(auth, twitterProvider);
+				console.log('✅ Popup login successful');
+				await handleResult(result);
+			} catch (popupError) {
+				console.log('⚠️ Popup failed, error details:', popupError);
+				console.log('⚠️ Error code:', popupError?.code);
+				console.log('⚠️ Error message:', popupError?.message);
 				
-				// Fallback to popup if redirect fails
-				console.log('🔄 Falling back to popup login...');
+				// Check if it's an OAuth error
+				if (popupError?.code === 'auth/popup-closed-by-user') {
+					console.log('ℹ️ User closed popup, no action needed');
+					return;
+				}
+				
+				if (popupError?.code === 'auth/unauthorized-domain') {
+					alert('Error: Dominio no autorizado. Contacta al administrador.');
+					return;
+				}
+				
+				// Fallback to redirect for other errors
+				console.log('🔄 Falling back to redirect login...');
 				try {
-					const result = await signInWithPopup(auth, twitterProvider);
-					console.log('✅ Popup login successful');
-					await handleResult(result);
-				} catch (popupError) {
-					console.log('⚠️ Popup also failed:', popupError);
+					await signInWithRedirect(auth, twitterProvider);
+				} catch (redirectError) {
+					console.error('💥 Redirect also failed:', redirectError);
 					alert('Error en el login de Twitter. Por favor, intenta de nuevo.');
 				}
 			}
