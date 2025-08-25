@@ -21,44 +21,33 @@ exports.ping = async (req, res) => {
   }
 };
 
-// Twitter OAuth initiation - CRITICAL for login flow
+// Twitter OAuth initiation - OAuth v1 (consumer keys)
 exports.twitterAuth = async (req, res) => {
-  console.log('🔐 Starting Twitter authentication...');
+  console.log('🔐 Starting Twitter OAuth v1 authentication...');
   
   try {
-    // Check if required environment variables are set
-    if (!process.env.TWITTER_CLIENT_ID || !process.env.TWITTER_CALLBACK_URL) {
-      console.log('❌ Missing Twitter environment variables');
+    // Check if required environment variables are set for OAuth v1
+    if (!process.env.TWITTER_CONSUMER_KEY || !process.env.TWITTER_CONSUMER_SECRET) {
+      console.log('❌ Missing Twitter OAuth v1 environment variables');
       return res.status(500).json({
-        error: 'Twitter configuration missing',
-        details: 'TWITTER_CLIENT_ID or TWITTER_CALLBACK_URL not set'
+        error: 'Twitter OAuth v1 configuration missing',
+        details: 'TWITTER_CONSUMER_KEY or TWITTER_CONSUMER_SECRET not set'
       });
     }
     
-    const state = Math.random().toString(36).substring(2, 15);
-    const codeVerifier = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+    // For OAuth v1, we need to redirect to a different flow
+    // Since Firebase handles the OAuth v1, we'll redirect back to the frontend
+    // and let Firebase handle the Twitter authentication
     
-    // Generate PKCE code challenge
-    const crypto = require('crypto');
-    const hash = crypto.createHash('sha256').update(codeVerifier).digest();
-    const codeChallenge = hash.toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+    console.log('🔄 OAuth v1 detected, redirecting to frontend for Firebase auth');
     
-    const authUrl = `https://twitter.com/i/oauth2/authorize?` +
-      `response_type=code&` +
-      `client_id=${process.env.TWITTER_CLIENT_ID}&` +
-      `redirect_uri=${encodeURIComponent(process.env.TWITTER_CALLBACK_URL)}&` +
-      `scope=tweet.read%20users.read&` +
-      `state=${state}&` +
-      `code_challenge_method=S256&` +
-      `code_challenge=${codeChallenge}`;
-    
-    console.log('🔗 Redirecting to Twitter OAuth:', authUrl);
-    res.redirect(authUrl);
+    // Redirect to frontend with instruction to use Firebase OAuth v1
+    res.redirect('https://www.pfcwhitelist.xyz?auth_method=firebase_oauth_v1');
     
   } catch (error) {
-    console.error('💥 Error in Twitter auth:', error);
+    console.error('💥 Error in Twitter OAuth v1:', error);
     res.status(500).json({
-      error: 'Twitter authentication failed',
+      error: 'Twitter OAuth v1 authentication failed',
       details: error.message
     });
   }
