@@ -98,7 +98,10 @@ async function exchangeCodeForToken(code) {
     const clientId = process.env.TWITTER_CONSUMER_KEY;
     const clientSecret = process.env.TWITTER_CONSUMER_SECRET;
     const redirectUri = 'https://www.pfcwhitelist.xyz/auth/callback';
-    const codeVerifier = 'E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM'; // Should match code challenge
+    
+    console.log('🔄 Exchanging code for token...');
+    console.log('🔄 Client ID:', clientId ? '✅ Set' : '❌ Missing');
+    console.log('🔄 Redirect URI:', redirectUri);
     
     const response = await fetch('https://api.twitter.com/2/oauth2/token', {
       method: 'POST',
@@ -109,14 +112,15 @@ async function exchangeCodeForToken(code) {
       body: new URLSearchParams({
         grant_type: 'authorization_code',
         code: code,
-        redirect_uri: redirectUri,
-        code_verifier: codeVerifier
+        redirect_uri: redirectUri
+        // Removed PKCE for now to simplify
       })
     });
     
     if (!response.ok) {
-      console.error('❌ Token exchange failed:', response.status);
-      return { success: false };
+      const errorText = await response.text();
+      console.error('❌ Token exchange failed:', response.status, errorText);
+      return { success: false, error: errorText };
     }
     
     const data = await response.json();
@@ -130,7 +134,7 @@ async function exchangeCodeForToken(code) {
     
   } catch (error) {
     console.error('💥 Error in token exchange:', error);
-    return { success: false };
+    return { success: false, error: error.message };
   }
 }
 
@@ -170,29 +174,36 @@ exports.twitterOAuth2Authorize = async (req, res) => {
     // Twitter OAuth 2.0 configuration
     const clientId = process.env.TWITTER_CONSUMER_KEY;
     const redirectUri = 'https://www.pfcwhitelist.xyz/auth/callback';
-    const scope = 'tweet.read users.read follows.read';
     
     if (!clientId) {
       console.error('❌ TWITTER_CONSUMER_KEY not configured');
       return res.status(500).json({ error: 'Twitter configuration missing' });
     }
     
-    // Generate OAuth 2.0 authorization URL
+    // Generate state parameter for security
+    const state = Math.random().toString(36).substring(7);
+    
+    // Generate OAuth 2.0 authorization URL with minimal required parameters
     const authUrl = `https://twitter.com/i/oauth2/authorize?` +
       `response_type=code&` +
       `client_id=${encodeURIComponent(clientId)}&` +
       `redirect_uri=${encodeURIComponent(redirectUri)}&` +
-      `scope=${encodeURIComponent(scope)}&` +
-      `state=${Math.random().toString(36).substring(7)}&` +
-      `code_challenge_method=S256&` +
-      `code_challenge=${generateCodeChallenge()}`;
+      `scope=${encodeURIComponent('tweet.read users.read')}&` +
+      `state=${state}`;
     
     console.log('🔗 Generated OAuth 2.0 authorization URL');
+    console.log('🔗 Client ID:', clientId);
+    console.log('🔗 Redirect URI:', redirectUri);
     
     return res.json({
       success: true,
       authUrl: authUrl,
-      message: 'OAuth 2.0 authorization URL generated'
+      message: 'OAuth 2.0 authorization URL generated',
+      debug: {
+        clientId: clientId ? '✅ Set' : '❌ Missing',
+        redirectUri: redirectUri,
+        state: state
+      }
     });
     
   } catch (err) {
