@@ -12,7 +12,8 @@ function Dashboard({ user, onLogout }) {
     totalPoints: 0,
     completedMissions: 0,
     totalMissions: 0,
-    pendingMissions: 0
+    pendingMissions: 0,
+    userWallet: null
   });
   const [loading, setLoading] = useState(false);
   const [loadingMissionId, setLoadingMissionId] = useState(null);
@@ -99,28 +100,26 @@ function Dashboard({ user, onLogout }) {
   const fetchUserStats = async () => {
     try {
       console.log('📊 Fetching user stats...');
-      
       const token = localStorage.getItem('jwt_token');
       if (!token) {
         console.log('❌ No token found for stats');
         return;
       }
-      
       const response = await fetch(`${API_URL}/api/user/stats`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
       });
-      
       if (response.ok) {
         const data = await response.json();
         console.log('✅ User stats loaded:', data.stats);
-        
         setStats({
           totalPoints: data.stats.totalPoints || 0,
           completedMissions: data.stats.completedMissions || 0,
           totalMissions: data.stats.totalMissions || 0,
-          pendingMissions: data.stats.pendingMissions || 0
+          pendingMissions: data.stats.pendingMissions || 0,
+          userWallet: data.stats.userWallet?.wallet || null,
+          canChange: data.stats.userWallet ? false : true
         });
       } else {
         console.error('❌ Failed to load user stats:', response.status);
@@ -290,7 +289,7 @@ function Dashboard({ user, onLogout }) {
           </div>
           
           <div className="wallet-section">
-            <WalletSection />
+            <WalletSection wallet={stats.userWallet} canChange={stats.canChange} />
           </div>
           
           <div className="missions-section">

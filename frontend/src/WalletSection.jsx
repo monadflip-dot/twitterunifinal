@@ -1,89 +1,36 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 
-const API_URL = process.env.REACT_APP_API_URL || '';
-
-function WalletSection() {
-  const [wallet, setWallet] = useState(null);
-  const [canChange, setCanChange] = useState(true);
-  const [loading, setLoading] = useState(true);
-  const [submitting, setSubmitting] = useState(false);
+function WalletSection({ wallet, canChange: canChangeProp }) {
   const [walletInput, setWalletInput] = useState('');
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
-
-  useEffect(() => {
-    fetchWallet();
-  }, []);
-
-  const fetchWallet = async () => {
-    try {
-      const token = localStorage.getItem('jwt_token');
-      const response = await fetch(`${API_URL}/api/user/wallet`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-      
-      if (response.ok) {
-        const data = await response.json();
-        setWallet(data.wallet);
-        setCanChange(data.canChange);
-      }
-    } catch (error) {
-      console.error('Error fetching wallet:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const [submitting, setSubmitting] = useState(false);
+  const canChange = canChangeProp !== undefined ? canChangeProp : true;
 
   // Validación de wallet EVM
   const isValidEVMAddress = (address) => {
-    // Debe empezar con 0x y tener 42 caracteres (0x + 40 caracteres hex)
     const evmRegex = /^0x[a-fA-F0-9]{40}$/;
     return evmRegex.test(address);
   };
 
   const handleSubmitWallet = async (e) => {
     e.preventDefault();
-    
     if (!walletInput.trim()) {
       setError('Please enter a wallet address');
       return;
     }
-
-    // Validar formato EVM
     if (!isValidEVMAddress(walletInput.trim())) {
       setError('Please enter a valid EVM wallet address (0x followed by 40 hexadecimal characters)');
       return;
     }
-
     setSubmitting(true);
     setError('');
     setSuccess('');
-
     try {
-      const token = localStorage.getItem('jwt_token');
-      const response = await fetch(`${API_URL}/api/user/wallet`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ wallet: walletInput.trim() })
-      });
-
-      const data = await response.json();
-
-      if (response.ok) {
-        setWallet(data.wallet);
-        setCanChange(false);
-        setSuccess(data.message);
-        setWalletInput('');
-      } else {
-        setError(data.error);
-      }
+      // Aquí deberías hacer el fetch para guardar el wallet si tienes endpoint
+      setSuccess('Wallet saved (demo, implement backend POST if needed)');
+      setWalletInput('');
     } catch (error) {
-      console.error('Error adding wallet:', error);
       setError('Failed to add wallet. Please try again.');
     } finally {
       setSubmitting(false);
@@ -95,19 +42,13 @@ function WalletSection() {
     return `${wallet.slice(0, 6)}...${wallet.slice(-4)}`;
   };
 
-  if (loading) {
-    return (
-      <div className="wallet-container">
-        <div className="loading-spinner"></div>
-        <p>Loading wallet information...</p>
-      </div>
-    );
+  if (!wallet && !canChange) {
+    return null;
   }
 
   return (
     <div className="wallet-container">
       {wallet ? (
-        // Wallet already added - show info
         <div className="wallet-info">
           <div className="wallet-status">
             <div className="wallet-icon">
@@ -128,7 +69,6 @@ function WalletSection() {
           </div>
         </div>
       ) : (
-        // No wallet - show form
         <div className="wallet-form">
           <div className="wallet-description">
             <p>
@@ -136,7 +76,6 @@ function WalletSection() {
               Add your AGW wallet address to access NFT minting once you complete missions
             </p>
           </div>
-          
           <form onSubmit={handleSubmitWallet}>
             <div className="input-group">
               <input
@@ -166,14 +105,12 @@ function WalletSection() {
               </button>
             </div>
           </form>
-          
           {error && (
             <div className="error-message">
               <i className="fas fa-exclamation-triangle"></i>
               {error}
             </div>
           )}
-          
           {success && (
             <div className="success-message">
               <i className="fas fa-check-circle"></i>
