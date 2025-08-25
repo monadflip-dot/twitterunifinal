@@ -55,58 +55,69 @@ function LoginPage() {
 	}, []);
 
 	const handleResult = async (result) => {
-		const firebaseUser = result.user;
-		let accessToken = null;
-		let accessSecret = null;
 		try {
-			const cred = TwitterAuthProvider.credentialFromResult(result);
-			accessToken = cred?.accessToken || null;
-			accessSecret = cred?.secret || null;
-		} catch (e) {
-			console.warn('No Twitter credential extracted:', e?.message || e);
-		}
-		const info = getAdditionalUserInfo(result);
-		const screenName = info?.username || firebaseUser?.reloadUserInfo?.screenName || firebaseUser?.displayName || 'user';
-		const idToken = await firebaseUser.getIdToken();
-		
-		console.log('🔑 Twitter access token from Firebase:', !!accessToken);
-		
-		const response = await fetch(`${API_URL}/api/auth/firebase`, {
-			method: 'POST',
-			headers: { 'Content-Type': 'application/json' },
-			body: JSON.stringify({
-				idToken,
-				twitterAccessToken: accessToken,
-				twitterAccessSecret: accessSecret,
-				profile: {
-					uid: firebaseUser.uid,
-					displayName: firebaseUser.displayName,
-					photoURL: firebaseUser.photoURL,
-					email: firebaseUser.email,
-					screenName
-				}
-			})
-		});
-		
-		if (response.ok) {
-			const data = await response.json();
+			console.log('🔐 Firebase auth result received');
+			console.log('👤 User:', result.user?.displayName);
+			console.log('🔑 Access token exists:', !!result.credential?.accessToken);
 			
-			if (data.success) {
-				// Store JWT token in localStorage
-				localStorage.setItem('jwt_token', data.token);
-				console.log('✅ Authentication successful with Twitter access token');
-				window.location.reload();
-			} else if (data.action === 'redirect_to_twitter') {
-				// No Twitter access token, redirect to backend Twitter OAuth
-				console.log('⚠️ Redirecting to Twitter OAuth for access token');
-				window.location.href = `${API_URL}/auth/twitter`;
-			} else {
-				console.error('❌ Authentication failed:', data.message);
-				alert('Authentication failed. Please try again.');
+			const idToken = result.credential?.accessToken;
+			const accessToken = result.credential?.accessToken;
+			const accessSecret = result.credential?.accessSecret;
+			
+			if (!idToken) {
+				alert('No se pudo obtener el token de Firebase. Por favor, intenta de nuevo.');
+				return;
 			}
-		} else {
-			console.error('❌ API call failed:', response.status);
-			alert('Authentication failed. Please try again.');
+			
+			console.log('📱 Sending auth request to backend...');
+			const response = await fetch(`${API_URL}/api/auth/firebase`, {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({
+					idToken,
+					twitterAccessToken: accessToken,
+					twitterAccessSecret: accessSecret,
+					profile: {
+						screenName: result.user?.displayName,
+						displayName: result.user?.displayName,
+						photoURL: result.user?.photoURL,
+						id: result.user?.uid
+					}
+				})
+			});
+			
+			console.log('📡 Backend response status:', response.status);
+			
+			if (response.ok) {
+				const data = await response.json();
+				console.log('✅ Backend auth response:', data);
+				
+				if (data.success) {
+					// Store the JWT token from backend response
+					if (data.token) {
+						localStorage.setItem('jwt_token', data.token);
+						console.log('✅ JWT token stored in localStorage');
+						console.log('🎫 Token (first 50 chars):', data.token.substring(0, 50) + '...');
+					} else {
+						console.log('⚠️ No token received from backend');
+					}
+					
+					alert('¡Autenticación exitosa!');
+					window.location.reload();
+				} else if (data.action === 'redirect_to_twitter') {
+					console.log('🔄 Redirecting to Twitter OAuth...');
+					window.location.href = `${API_URL}/auth/twitter`;
+				} else {
+					alert('Error en la autenticación: ' + (data.message || 'Error desconocido'));
+				}
+			} else {
+				const errorText = await response.text();
+				console.error('❌ Backend auth failed:', response.status, errorText);
+				alert('Error en la autenticación del backend. Por favor, intenta de nuevo.');
+			}
+		} catch (error) {
+			console.error('💥 Error in handleResult:', error);
+			alert('Error durante la autenticación. Por favor, intenta de nuevo.');
 		}
 	};
 

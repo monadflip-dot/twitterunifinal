@@ -172,11 +172,15 @@ const authenticateJWT = (req, res, next) => {
   }
 };
 
-// Routes
-app.use('/api/missions', authenticateJWT, missionsRouter);
+// 🔐 REGISTER ROUTES IN CORRECT ORDER
+console.log('🔐 Registering routes...');
+
+// 1. AUTH ROUTES (must be first, before protected routes)
+console.log('🔐 Registering auth routes...');
 
 // Firebase Auth login endpoint (from frontend)
 app.post('/api/auth/firebase', async (req, res) => {
+  console.log('📱 /api/auth/firebase endpoint called');
   try {
     const { idToken, twitterAccessToken, twitterAccessSecret, profile } = req.body || {};
     if (!idToken) {
@@ -213,6 +217,7 @@ app.post('/api/auth/firebase', async (req, res) => {
 
     console.log('👤 Creating session for user:', user.username);
     console.log('🔑 Twitter access token available:', !!user.accessToken);
+    console.log('🔑 Twitter access token length:', user.accessToken ? user.accessToken.length : 0);
 
     // Persist basic user info (tokens remain in JWT)
     try {
@@ -238,9 +243,13 @@ app.post('/api/auth/firebase', async (req, res) => {
       maxAge: 24 * 60 * 60 * 1000
     });
 
+    console.log('✅ JWT token generated and cookie set');
+    console.log('✅ JWT contains accessToken:', !!user.accessToken);
+
     return res.json({ 
       success: true, 
-      message: 'Authentication successful with Twitter access token'
+      message: 'Authentication successful with Twitter access token',
+      token: token // Send token in response for frontend to store
     });
   } catch (err) {
     console.error('💥 Error in /api/auth/firebase:', err);
@@ -250,6 +259,7 @@ app.post('/api/auth/firebase', async (req, res) => {
 
 // Add explicit logout to clear JWT cookie
 app.post('/api/auth/logout', (req, res) => {
+  console.log('📱 /api/auth/logout endpoint called');
   try {
     res.clearCookie('jwt', {
       httpOnly: true,
@@ -261,6 +271,13 @@ app.post('/api/auth/logout', (req, res) => {
     return res.status(500).json({ error: 'Logout failed' });
   }
 });
+
+console.log('✅ Auth routes registered successfully');
+
+// 2. PROTECTED ROUTES (after auth routes)
+console.log('🔐 Registering protected routes...');
+app.use('/api/missions', authenticateJWT, missionsRouter);
+console.log('✅ Protected routes registered successfully');
 
 // Twitter OAuth routes - Direct implementation without Passport
 app.get('/auth/twitter', (req, res) => {
