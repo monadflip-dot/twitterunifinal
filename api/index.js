@@ -575,7 +575,7 @@ exports.getUserStats = async (req, res) => {
     console.log('✅ JWT token verified for user:', decoded.username);
     
     try {
-      // FIXED: Use correct collection 'userProgress' instead of 'userMissions'
+      // FIXED: Use correct collection 'userProgress' (singular) as shown in Firebase
       const userProgressSnapshot = await firestoreDb
         .collection('userProgress')
         .where('userId', '==', decoded.id)
@@ -584,7 +584,7 @@ exports.getUserStats = async (req, res) => {
       let userProgress = null;
       if (!userProgressSnapshot.empty) {
         userProgress = userProgressSnapshot.docs[0].data();
-        console.log('✅ User progress found:', userProgress);
+        console.log('✅ User progress found in userProgress collection:', userProgress);
       }
       
       // Get all missions to calculate stats
@@ -601,9 +601,12 @@ exports.getUserStats = async (req, res) => {
       if (userProgress) {
         // Use the actual structure: completedMissions as an object with numeric keys
         if (userProgress.completedMissions) {
+          // Count the number of completed missions from the object
           completedMissions = Object.keys(userProgress.completedMissions).length;
+          console.log('✅ Completed missions count from object:', completedMissions);
         }
         totalPoints = userProgress.totalPoints || 0;
+        console.log('✅ Total points from userProgress:', totalPoints);
       }
       
       const stats = {
