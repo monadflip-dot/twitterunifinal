@@ -551,16 +551,17 @@ exports.getUserStats = async (req, res) => {
     console.log('✅ JWT token verified for user:', decoded.username);
     
     try {
-      // Get user's mission completions from Firebase
-      const userMissionsSnapshot = await firestoreDb
-        .collection('userMissions')
+      // FIXED: Use correct collection 'userProgress' instead of 'userMissions'
+      const userProgressSnapshot = await firestoreDb
+        .collection('userProgress')
         .where('userId', '==', decoded.id)
         .get();
       
-      const userMissions = [];
-      userMissionsSnapshot.forEach(doc => {
-        userMissions.push(doc.data());
-      });
+      let userProgress = null;
+      if (!userProgressSnapshot.empty) {
+        userProgress = userProgressSnapshot.docs[0].data();
+        console.log('✅ User progress found:', userProgress);
+      }
       
       // Get all missions to calculate stats
       const missionsSnapshot = await firestoreDb.collection('missions').get();
@@ -569,22 +570,28 @@ exports.getUserStats = async (req, res) => {
         allMissions.push(doc.data());
       });
       
-      // Calculate statistics
-      const completedMissions = userMissions.filter(um => um.completed).length;
-      const totalPoints = userMissions
-        .filter(um => um.completed)
-        .reduce((sum, um) => sum + (um.points || 0), 0);
+      // Calculate statistics based on actual Firebase structure
+      let completedMissions = 0;
+      let totalPoints = 0;
+      
+      if (userProgress) {
+        // Use the actual structure: completedMissions as an object with numeric keys
+        if (userProgress.completedMissions) {
+          completedMissions = Object.keys(userProgress.completedMissions).length;
+        }
+        totalPoints = userProgress.totalPoints || 0;
+      }
       
       const stats = {
         totalPoints: totalPoints,
         completedMissions: completedMissions,
         totalMissions: allMissions.length,
         pendingMissions: allMissions.length - completedMissions,
-        userMissions: userMissions,
+        userProgress: userProgress,
         allMissions: allMissions
       };
       
-      console.log('✅ User stats loaded:', stats);
+      console.log('✅ User stats calculated:', stats);
       
       return res.json({
         success: true,
@@ -600,8 +607,8 @@ exports.getUserStats = async (req, res) => {
         stats: {
           totalPoints: 0,
           completedMissions: 0,
-          totalMissions: 3,
-          pendingMissions: 3,
+          totalMissions: 7,
+          pendingMissions: 7,
           note: 'Using fallback stats due to Firebase connection issue'
         }
       });
