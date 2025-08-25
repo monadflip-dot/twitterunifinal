@@ -23,6 +23,10 @@
       "dest": "backend/index.js"
     },
     {
+      "src": "/test",
+      "dest": "backend/index.js"
+    },
+    {
       "src": "/(.*)",
       "dest": "frontend/dist/$1"
     }

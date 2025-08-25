@@ -187,6 +187,36 @@ const authenticateJWT = (req, res, next) => {
 // 🔐 REGISTER ROUTES IN CORRECT ORDER
 console.log('🔐 Registering routes...');
 
+// 0. TEST ENDPOINTS (for debugging)
+console.log('🧪 Registering test endpoints...');
+
+app.get('/test', (req, res) => {
+  console.log('🧪 Test endpoint called');
+  res.json({
+    success: true,
+    message: 'Backend is working correctly',
+    timestamp: new Date().toISOString(),
+    backend: 'Node.js/Express',
+    status: 'operational'
+  });
+});
+
+app.get('/auth/test', (req, res) => {
+  console.log('🧪 Auth test endpoint called');
+  res.json({
+    success: true,
+    message: 'Auth routes are working correctly',
+    timestamp: new Date().toISOString(),
+    authRoutes: {
+      '/auth/twitter': 'Twitter OAuth initiation',
+      '/auth/twitter/callback': 'Twitter OAuth callback',
+      '/auth/test': 'This test endpoint'
+    }
+  });
+});
+
+console.log('✅ Test endpoints registered successfully');
+
 // 1. AUTH ROUTES (must be first, before protected routes)
 console.log('🔐 Registering auth routes...');
 
@@ -702,5 +732,20 @@ console.log('   4. Static routes (LAST)');
 
 // Start server
 app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+  console.log('🚀 ========================================');
+  console.log('🚀 SERVER STARTED SUCCESSFULLY');
+  console.log('🚀 ========================================');
+  console.log(`🌐 Server running on port ${PORT}`);
+  console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
+  console.log('🔐 Available routes:');
+  console.log('   GET  /test - Backend test endpoint');
+  console.log('   GET  /auth/test - Auth test endpoint');
+  console.log('   GET  /auth/twitter - Twitter OAuth initiation');
+  console.log('   GET  /auth/twitter/callback - Twitter OAuth callback');
+  console.log('   POST /api/auth/firebase - Firebase auth');
+  console.log('   POST /api/auth/logout - Logout');
+  console.log('   GET  /api/missions/* - Missions (protected)');
+  console.log('🚀 ========================================');
+  console.log('🚀 Server is ready to handle requests');
+  console.log('🚀 ========================================');
 });
