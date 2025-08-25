@@ -1,4 +1,4 @@
-// Vercel Serverless Function - Complete implementation
+// Vercel Serverless Function - Simple and functional version
 console.log('🚀 API function loaded successfully');
 
 // Import required modules
@@ -37,10 +37,10 @@ exports.firebaseAuth = async (req, res) => {
     console.log('✅ Firebase ID token verified for uid:', decoded.uid);
 
     if (!twitterAccessToken) {
-      console.log('⚠️ No Twitter access token, user needs to reconnect Twitter');
+      console.log('⚠️ No Twitter access token, redirecting to Twitter OAuth');
       return res.json({ 
         success: false, 
-        action: 'reconnect_twitter',
+        action: 'redirect_to_twitter',
         message: 'Twitter authentication required'
       });
     }
@@ -98,9 +98,76 @@ exports.firebaseAuth = async (req, res) => {
   }
 };
 
-// Logout endpoint
-exports.logout = async (req, res) => {
-  console.log('📱 /api/auth/logout endpoint called');
+// Debug endpoint for Twitter OAuth issues
+exports.debugTwitter = async (req, res) => {
+  console.log('🔍 /api/debug/twitter endpoint called');
+  
+  try {
+    const debugInfo = {
+      timestamp: new Date().toISOString(),
+      environment: process.env.NODE_ENV || 'development',
+      twitterConfig: {
+        consumerKey: process.env.TWITTER_CONSUMER_KEY ? '✅ Set' : '❌ Missing',
+        consumerSecret: process.env.TWITTER_CONSUMER_SECRET ? '✅ Set' : '❌ Missing',
+        sessionSecret: process.env.SESSION_SECRET ? '✅ Set' : '❌ Missing'
+      },
+      firebaseConfig: {
+        projectId: process.env.FIREBASE_PROJECT_ID || '❌ Missing',
+        clientEmail: process.env.FIREBASE_CLIENT_EMAIL ? '✅ Set' : '❌ Missing',
+        privateKey: process.env.FIREBASE_PRIVATE_KEY ? '✅ Set' : '❌ Missing'
+      },
+      note: 'Check Twitter Developer Portal for OAuth callback URLs and app permissions'
+    };
+    
+    return res.json({
+      success: true,
+      debug: debugInfo
+    });
+    
+  } catch (err) {
+    console.error('💥 Error in debug endpoint:', err);
+    return res.status(500).json({ error: 'Debug failed' });
+  }
+};
+
+// User verification endpoint
+exports.getUser = async (req, res) => {
+  console.log('👤 /api/user endpoint called');
+  
+  try {
+    // Get JWT token from Authorization header
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ error: 'No valid authorization header' });
+    }
+    
+    const token = authHeader.substring(7);
+    
+    // Verify JWT token
+    const decoded = jwt.verify(token, process.env.SESSION_SECRET || 'your-secret-key');
+    console.log('✅ JWT token verified for user:', decoded.username);
+    
+    // Return user data
+    return res.json({
+      success: true,
+      user: {
+        id: decoded.id,
+        username: decoded.username,
+        displayName: decoded.displayName,
+        photo: decoded.photo,
+        twitter: decoded.twitter
+      }
+    });
+    
+  } catch (err) {
+    console.error('💥 Error in /api/user:', err);
+    return res.status(401).json({ error: 'Invalid or expired token' });
+  }
+};
+
+// Logout endpoint (alternative path)
+exports.logoutAlt = async (req, res) => {
+  console.log('📱 /api/logout endpoint called');
   
   try {
     res.clearCookie('jwt', {
@@ -114,92 +181,6 @@ exports.logout = async (req, res) => {
   }
 };
 
-// User endpoint to verify authentication
-exports.getUser = async (req, res) => {
-  console.log('👤 /api/user endpoint called');
-  
-  try {
-    // Get JWT token from Authorization header
-    const authHeader = req.headers.authorization;
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return res.status(401).json({ error: 'No token provided' });
-    }
-    
-    const token = authHeader.substring(7); // Remove 'Bearer ' prefix
-    
-    // Verify JWT token
-    const decoded = jwt.verify(token, process.env.SESSION_SECRET || 'your-secret-key');
-    
-    if (!decoded) {
-      return res.status(401).json({ error: 'Invalid token' });
-    }
-    
-    console.log('✅ JWT token verified for user:', decoded.username);
-    
-    // Return user data
-    res.json({
-      user: {
-        id: decoded.id,
-        username: decoded.username,
-        displayName: decoded.displayName,
-        photo: decoded.photo,
-        twitter: decoded.twitter
-      }
-    });
-    
-  } catch (error) {
-    console.error('💥 Error in /api/user:', error);
-    if (error.name === 'JsonWebTokenError') {
-      return res.status(401).json({ error: 'Invalid token' });
-    }
-    if (error.name === 'TokenExpiredError') {
-      return res.status(401).json({ error: 'Token expired' });
-    }
-    res.status(500).json({ error: 'Internal server error' });
-  }
-};
-
-// Debug endpoint to check Twitter environment variables
-exports.debugTwitter = async (req, res) => {
-  console.log('🔍 Debug Twitter environment variables');
-  
-  try {
-    const twitterVars = {
-      TWITTER_CONSUMER_KEY: {
-        exists: !!process.env.TWITTER_CONSUMER_KEY,
-        length: process.env.TWITTER_CONSUMER_KEY ? process.env.TWITTER_CONSUMER_KEY.length : 0,
-        preview: process.env.TWITTER_CONSUMER_KEY ? 
-          process.env.TWITTER_CONSUMER_KEY.substring(0, 8) + '...' : 'Not set'
-      },
-      TWITTER_CONSUMER_SECRET: {
-        exists: !!process.env.TWITTER_CONSUMER_SECRET,
-        length: process.env.TWITTER_CONSUMER_SECRET ? process.env.TWITTER_CONSUMER_SECRET.length : 0,
-        preview: process.env.TWITTER_CONSUMER_SECRET ? 
-          process.env.TWITTER_CONSUMER_SECRET.substring(0, 8) + '...' : 'Not set'
-      },
-      SESSION_SECRET: {
-        exists: !!process.env.SESSION_SECRET,
-        length: process.env.SESSION_SECRET ? process.env.SESSION_SECRET.length : 0
-      }
-    };
-    
-    console.log('🔍 Twitter environment variables status:', twitterVars);
-    
-    res.json({
-      message: 'Twitter environment variables debug info',
-      twitter: twitterVars,
-      timestamp: new Date().toISOString()
-    });
-    
-  } catch (error) {
-    console.error('💥 Error in debug endpoint:', error);
-    res.status(500).json({
-      error: 'Debug endpoint failed',
-      details: error.message
-    });
-  }
-};
-
 // Main handler for Vercel
 module.exports = async (req, res) => {
   console.log('🚀 Main handler called');
@@ -207,10 +188,11 @@ module.exports = async (req, res) => {
   console.log('📝 Request URL:', req.url);
   
   try {
-    // Set CORS headers
-    res.setHeader('Access-Control-Allow-Origin', '*');
+    // Set CORS headers for production
+    res.setHeader('Access-Control-Allow-Origin', 'https://www.pfcwhitelist.xyz');
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
     
     if (req.method === 'OPTIONS') {
       res.status(200).end();
@@ -222,27 +204,15 @@ module.exports = async (req, res) => {
       return await exports.ping(req, res);
     }
     
-    if (req.url === '/auth/twitter' || req.url === '/auth/twitter/') {
-      // This route is no longer needed as Twitter OAuth is handled by Firebase
-      // Keeping it for now to avoid breaking existing links, but it will return 404
-      return res.status(404).json({ message: 'Twitter endpoint not found' });
-    }
-    
-    if (req.url === '/auth/twitter/callback' || req.url === '/auth/twitter/callback/') {
-      // This route is no longer needed as Twitter OAuth is handled by Firebase
-      // Keeping it for now to avoid breaking existing links, but it will return 404
-      return res.status(404).json({ message: 'Twitter callback endpoint not found' });
+    if (req.url === '/api/debug/twitter' || req.url === '/api/debug/twitter/') {
+      if (req.method === 'GET') {
+        return await exports.debugTwitter(req, res);
+      }
     }
     
     if (req.url === '/api/auth/firebase' || req.url === '/api/auth/firebase/') {
       if (req.method === 'POST') {
         return await exports.firebaseAuth(req, res);
-      }
-    }
-    
-    if (req.url === '/api/auth/logout' || req.url === '/api/auth/logout/') {
-      if (req.method === 'POST') {
-        return await exports.logout(req, res);
       }
     }
 
@@ -252,8 +222,16 @@ module.exports = async (req, res) => {
       }
     }
     
-    if (req.url === '/debug/twitter' || req.url === '/debug/twitter/') {
-      return await exports.debugTwitter(req, res);
+    if (req.url === '/api/logout' || req.url === '/api/logout/') {
+      if (req.method === 'POST') {
+        return await exports.logoutAlt(req, res);
+      }
+    }
+    
+    if (req.url === '/api/auth/logout' || req.url === '/api/auth/logout/') {
+      if (req.method === 'POST') {
+        return await exports.logoutAlt(req, res);
+      }
     }
     
     // Default response for unmatched routes

@@ -3,7 +3,7 @@ import { signInWithPopup, signInWithRedirect, getRedirectResult } from 'firebase
 import { auth, twitterProvider } from './firebase';
 import favicon from '../images/favicon.png';
 
-const API_URL = import.meta.env.VITE_API_URL || 'https://www.pfcwhitelist.xyz';
+const API_URL = 'https://www.pfcwhitelist.xyz';
 
 export default function LoginPage() {
 	useEffect(() => {
@@ -102,15 +102,41 @@ export default function LoginPage() {
 				console.log('✅ Popup login successful');
 				await handleResult(result);
 			} catch (popupError) {
-				console.log('⚠️ Popup failed, falling back to redirect:', popupError?.code);
+				console.log('⚠️ Popup failed, error details:', popupError);
+				console.log('⚠️ Error code:', popupError?.code);
+				console.log('⚠️ Error message:', popupError?.message);
 				
-				// Fallback to redirect
+				// Check if it's an OAuth error
+				if (popupError?.code === 'auth/popup-closed-by-user') {
+					console.log('ℹ️ User closed popup, no action needed');
+					return;
+				}
+				
+				if (popupError?.code === 'auth/unauthorized-domain') {
+					alert('Error: Dominio no autorizado. Contacta al administrador.');
+					return;
+				}
+				
+				// Fallback to redirect for other errors
 				console.log('🔄 Falling back to redirect login...');
-				await signInWithRedirect(auth, twitterProvider);
+				try {
+					await signInWithRedirect(auth, twitterProvider);
+				} catch (redirectError) {
+					console.error('💥 Redirect also failed:', redirectError);
+					alert('Error en el login de Twitter. Por favor, intenta de nuevo.');
+				}
 			}
 		} catch (err) {
 			console.error('💥 Twitter login failed:', err?.code, err?.message);
-			alert('Twitter login failed. Please try again.');
+			
+			// Provide more specific error messages
+			if (err?.code === 'auth/unauthorized-domain') {
+				alert('Error: Este dominio no está autorizado para usar Twitter login.');
+			} else if (err?.code === 'auth/network-request-failed') {
+				alert('Error de conexión. Verifica tu internet e intenta de nuevo.');
+			} else {
+				alert('Error en el login de Twitter: ' + (err?.message || 'Error desconocido'));
+			}
 		}
 	};
 

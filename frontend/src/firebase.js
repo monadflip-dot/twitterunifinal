@@ -2,7 +2,7 @@ import { initializeApp } from 'firebase/app';
 import { getAuth, TwitterAuthProvider } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 
-// Configuración real de Firebase
+// Configuración de Firebase hardcodeada para producción
 const firebaseConfig = {
   apiKey: "AIzaSyAtEw0zB7fRbQ_2DMwHLzvCbrXbC1y81ok",
   authDomain: "twitter-1d917.firebaseapp.com",
@@ -21,14 +21,8 @@ export const auth = getAuth(app);
 export const db = getFirestore(app);
 export const twitterProvider = new TwitterAuthProvider();
 
-// 🔒 PERMISOS OPTIMIZADOS - Solo los mínimos necesarios
-// tweet.read: Para leer tweets y verificar contenido
-// users.read: Para obtener información básica del usuario
-twitterProvider.addScope('tweet.read');
-twitterProvider.addScope('users.read');
-
-// ❌ PERMISOS ELIMINADOS por seguridad:
-// like.write: NO necesario (solo verificación)
-// like.read: NO necesario (solo verificación)
+// 🔒 CONFIGURACIÓN BÁSICA - Sin scopes específicos para evitar problemas de OAuth
+// Firebase maneja automáticamente los permisos básicos necesarios
+// NO agregar scopes que puedan causar problemas de autorización
 
 export default app;

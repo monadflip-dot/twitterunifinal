@@ -5,7 +5,7 @@ import './App.css';
 import { auth } from './firebase';
 import { signOut } from 'firebase/auth';
 
-const API_URL = process.env.REACT_APP_API_URL || '';
+const API_URL = 'https://www.pfcwhitelist.xyz';
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -28,23 +28,6 @@ function App() {
       
       // Check auth status again with the new token
       checkAuthStatus();
-    }
-    
-    // Check for Firebase redirect result (when user returns from Twitter OAuth)
-    if (!tokenFromUrl) {
-      console.log('🔄 Checking for Firebase redirect result...');
-      import('./firebase').then(({ auth }) => {
-        import('firebase/auth').then(({ getRedirectResult }) => {
-          getRedirectResult(auth).then((result) => {
-            if (result) {
-              console.log('✅ Firebase redirect result found:', result.user);
-              handleFirebaseLogin(result);
-            }
-          }).catch((error) => {
-            console.log('ℹ️ No Firebase redirect result or error:', error.message);
-          });
-        });
-      });
     }
   }, []);
 
@@ -104,80 +87,6 @@ function App() {
       localStorage.removeItem('jwt_token');
       setIsAuthenticated(false);
       setUser(null);
-    }
-  };
-
-  const handleFirebaseLogin = async (result) => {
-    try {
-      console.log('🔄 Processing Firebase login result...');
-      
-      // Get Twitter access token from Firebase result
-      const credential = result.credential;
-      const accessToken = credential?.accessToken;
-      const accessSecret = credential?.secret;
-      
-      console.log('🔑 Twitter access token obtained:', !!accessToken);
-      
-      if (!accessToken) {
-        console.log('⚠️ No Twitter access token, user needs to reconnect Twitter');
-        alert('Twitter access token not found. Please try logging in again.');
-        return;
-      }
-      
-      // Get user profile from Twitter
-      const profile = {
-        id_str: result.user.providerData[0]?.uid,
-        screen_name: result.user.providerData[0]?.screenName,
-        name: result.user.providerData[0]?.displayName,
-        photoURL: result.user.providerData[0]?.photoURL
-      };
-      
-      console.log('👤 User profile:', profile);
-      
-      // Get Firebase ID token
-      const idToken = await result.user.getIdToken();
-      
-      // Send to backend for JWT generation
-      const response = await fetch('/api/auth/firebase', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          idToken,
-          twitterAccessToken: accessToken,
-          twitterAccessSecret: accessSecret,
-          profile
-        }),
-      });
-      
-      if (response.ok) {
-        const data = await response.json();
-        console.log('✅ Backend authentication successful');
-        
-        // Save JWT token
-        localStorage.setItem('jwt_token', data.token);
-        
-        // Update auth state
-        setUser({
-          id: result.user.uid,
-          username: profile.screen_name || result.user.displayName,
-          displayName: profile.name || result.user.displayName,
-          photo: profile.photoURL || result.user.photoURL
-        });
-        setIsAuthenticated(true);
-        
-        console.log('🎉 User successfully logged in and authenticated');
-        
-      } else {
-        console.error('❌ Backend authentication failed:', response.status);
-        const errorData = await response.json();
-        alert('Authentication failed: ' + (errorData.error || 'Unknown error'));
-      }
-      
-    } catch (error) {
-      console.error('💥 Error processing Firebase login:', error);
-      alert('Error processing login: ' + error.message);
     }
   };
 
