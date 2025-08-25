@@ -19,10 +19,15 @@ const app = initializeApp(firebaseConfig);
 // Initialize Firebase services
 export const auth = getAuth(app);
 export const db = getFirestore(app);
+
+// Configure Twitter provider with specific settings
 export const twitterProvider = new TwitterAuthProvider();
 
-// 🔒 CONFIGURACIÓN BÁSICA - Sin scopes específicos para evitar problemas de OAuth
-// Firebase maneja automáticamente los permisos básicos necesarios
-// NO agregar scopes que puedan causar problemas de autorización
+// 🔒 CONFIGURACIÓN ESPECÍFICA PARA OAUTH 1.0A
+// Agregar configuración específica para resolver problemas de token
+twitterProvider.setCustomParameters({
+  'force_login': 'true', // Forzar nueva autenticación
+  'lang': 'en' // Idioma específico
+});
 
 export default app;

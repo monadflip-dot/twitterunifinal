@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { signInWithPopup, signInWithRedirect, getRedirectResult } from 'firebase/auth';
+import { signInWithPopup, signInWithRedirect, getRedirectResult, signOut } from 'firebase/auth';
 import { auth, twitterProvider } from './firebase';
 import favicon from '../images/favicon.png';
 
@@ -22,6 +22,17 @@ export default function LoginPage() {
 
 		handleRedirectResult();
 	}, []);
+
+	// Clear Firebase auth state to resolve token issues
+	const clearAuthState = async () => {
+		try {
+			console.log('🧹 Clearing Firebase auth state...');
+			await signOut(auth);
+			console.log('✅ Auth state cleared');
+		} catch (error) {
+			console.log('⚠️ Error clearing auth state:', error);
+		}
+	};
 
 	const handleResult = async (result) => {
 		try {
@@ -95,6 +106,9 @@ export default function LoginPage() {
 		try {
 			console.log('🐦 Starting Twitter login...');
 			
+			// Clear auth state first to resolve token issues
+			await clearAuthState();
+			
 			// Try popup first (better UX)
 			try {
 				console.log('🔄 Attempting popup login...');
@@ -157,6 +171,24 @@ export default function LoginPage() {
 						<button className="twitter-login-btn" onClick={handleTwitterLogin}>
 							<i className="fab fa-twitter"></i>
 							Login with Twitter
+						</button>
+						
+						{/* Botón de reset para problemas de autenticación */}
+						<button 
+							className="reset-btn" 
+							onClick={clearAuthState}
+							style={{
+								marginTop: '10px',
+								padding: '8px 16px',
+								backgroundColor: '#666',
+								color: 'white',
+								border: 'none',
+								borderRadius: '4px',
+								cursor: 'pointer',
+								fontSize: '12px'
+							}}
+						>
+							🔄 Reset Auth State
 						</button>
 					</div>
 				</div>
