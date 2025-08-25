@@ -742,8 +742,10 @@ app.get('/api/debug/missions', (req, res) => {
   });
 });
 
-// 🔐 REGISTER STATIC ROUTES LAST (after all API routes)
-console.log('🌐 Registering static routes...');
+console.log('✅ All API routes registered successfully');
+
+// 🔐 REGISTER STATIC ROUTES LAST (after ALL API routes)
+console.log('🌐 Registering static routes LAST...');
 
 // Serve frontend static files
 app.use(express.static(path.join(__dirname, '../frontend/dist')));
@@ -753,17 +755,18 @@ app.get('/', (req, res) => {
   res.redirect('https://pfcwhitelist.xyz');
 });
 
-// Catch-all route for SPA - serve frontend index.html (MUST BE LAST)
+// Catch-all route for SPA - serve frontend index.html (MUST BE ABSOLUTELY LAST)
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, '../frontend/dist/index.html'));
 });
 
 console.log('✅ Static routes registered successfully');
 console.log('✅ All routes registered in correct order:');
-console.log('   1. Auth routes');
-console.log('   2. Protected routes');
-console.log('   3. Public API routes');
-console.log('   4. Static routes (LAST)');
+console.log('   1. Test endpoints (/ping, /test, /auth/test, /env/check)');
+console.log('   2. Auth routes (/api/auth/*, /auth/twitter*)');
+console.log('   3. Protected routes (/api/missions/*)');
+console.log('   4. Public API routes (/api/*)');
+console.log('   5. Static routes (LAST)');
 
 // Start server
 app.listen(PORT, () => {
@@ -773,8 +776,10 @@ app.listen(PORT, () => {
   console.log(`🌐 Server running on port ${PORT}`);
   console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
   console.log('🔐 Available routes:');
+  console.log('   GET  /ping - Simple ping test');
   console.log('   GET  /test - Backend test endpoint');
   console.log('   GET  /auth/test - Auth test endpoint');
+  console.log('   GET  /env/check - Environment check');
   console.log('   GET  /auth/twitter - Twitter OAuth initiation');
   console.log('   GET  /auth/twitter/callback - Twitter OAuth callback');
   console.log('   POST /api/auth/firebase - Firebase auth');
