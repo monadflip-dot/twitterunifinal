@@ -122,7 +122,7 @@ exports.twitterCallback = async (req, res) => {
     });
     
     // Redirect to frontend with success
-    res.redirect('https://www.pfcwhitelist.xyz?login=success&token=' + token);
+    res.redirect('https://www.pfcwhitelist.xyz/dashboard?login=success&token=' + token);
     
   } catch (error) {
     console.error('💥 Error in Twitter OAuth v1 callback:', error);
@@ -223,6 +223,51 @@ exports.logout = async (req, res) => {
   }
 };
 
+// User endpoint to verify authentication
+exports.getUser = async (req, res) => {
+  console.log('👤 /api/user endpoint called');
+  
+  try {
+    // Get JWT token from Authorization header
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ error: 'No token provided' });
+    }
+    
+    const token = authHeader.substring(7); // Remove 'Bearer ' prefix
+    
+    // Verify JWT token
+    const decoded = jwt.verify(token, process.env.SESSION_SECRET || 'your-secret-key');
+    
+    if (!decoded) {
+      return res.status(401).json({ error: 'Invalid token' });
+    }
+    
+    console.log('✅ JWT token verified for user:', decoded.username);
+    
+    // Return user data
+    res.json({
+      user: {
+        id: decoded.id,
+        username: decoded.username,
+        displayName: decoded.displayName,
+        photo: decoded.photo,
+        twitter: decoded.twitter
+      }
+    });
+    
+  } catch (error) {
+    console.error('💥 Error in /api/user:', error);
+    if (error.name === 'JsonWebTokenError') {
+      return res.status(401).json({ error: 'Invalid token' });
+    }
+    if (error.name === 'TokenExpiredError') {
+      return res.status(401).json({ error: 'Token expired' });
+    }
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
 // Main handler for Vercel
 module.exports = async (req, res) => {
   console.log('🚀 Main handler called');
@@ -262,6 +307,12 @@ module.exports = async (req, res) => {
     if (req.url === '/api/auth/logout' || req.url === '/api/auth/logout/') {
       if (req.method === 'POST') {
         return await exports.logout(req, res);
+      }
+    }
+
+    if (req.url === '/api/user' || req.url === '/api/user/') {
+      if (req.method === 'GET') {
+        return await exports.getUser(req, res);
       }
     }
     
