@@ -60,61 +60,24 @@ function LoginPage() {
 			console.log('👤 User:', result.user?.displayName);
 			console.log('🔑 Access token exists:', !!result.credential?.accessToken);
 			
-			const idToken = result.credential?.accessToken;
-			const accessToken = result.credential?.accessToken;
-			const accessSecret = result.credential?.accessSecret;
+			// 🔍 NEW: Always redirect to backend Twitter OAuth
+			// Firebase Auth with Twitter doesn't reliably provide access tokens
+			// So we'll use our backend's direct Twitter OAuth flow
+			console.log('🔄 Firebase auth successful, redirecting to backend Twitter OAuth...');
 			
-			if (!idToken) {
-				alert('Could not get Firebase token. Please try again.');
-				return;
+			// Store basic user info temporarily
+			if (result.user) {
+				localStorage.setItem('temp_user_info', JSON.stringify({
+					uid: result.user.uid,
+					displayName: result.user.displayName,
+					photoURL: result.user.photoURL,
+					email: result.user.email
+				}));
 			}
 			
-			console.log('📱 Sending auth request to backend...');
-			const response = await fetch(`${API_URL}/api/auth/firebase`, {
-				method: 'POST',
-				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({
-					idToken,
-					twitterAccessToken: accessToken,
-					twitterAccessSecret: accessSecret,
-					profile: {
-						screenName: result.user?.displayName,
-						displayName: result.user?.displayName,
-						photoURL: result.user?.photoURL,
-						id: result.user?.uid
-					}
-				})
-			});
+			// Redirect to backend Twitter OAuth
+			window.location.href = `${API_URL}/auth/twitter`;
 			
-			console.log('📡 Backend response status:', response.status);
-			
-			if (response.ok) {
-				const data = await response.json();
-				console.log('✅ Backend auth response:', data);
-				
-				if (data.success) {
-					// Store the JWT token from backend response
-					if (data.token) {
-						localStorage.setItem('jwt_token', data.token);
-						console.log('✅ JWT token stored in localStorage');
-						console.log('🎫 Token (first 50 chars):', data.token.substring(0, 50) + '...');
-					} else {
-						console.log('⚠️ No token received from backend');
-					}
-					
-					alert('Authentication successful!');
-					window.location.reload();
-				} else if (data.action === 'redirect_to_twitter') {
-					console.log('🔄 Redirecting to Twitter OAuth...');
-					window.location.href = `${API_URL}/auth/twitter`;
-				} else {
-					alert('Authentication error: ' + (data.message || 'Unknown error'));
-				}
-			} else {
-				const errorText = await response.text();
-				console.error('❌ Backend auth failed:', response.status, errorText);
-				alert('Backend authentication failed. Please try again.');
-			}
 		} catch (error) {
 			console.error('💥 Error in handleResult:', error);
 			alert('Error during authentication. Please try again.');

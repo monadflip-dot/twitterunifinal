@@ -415,7 +415,7 @@ app.get('/auth/twitter/callback', async (req, res) => {
     const tokenData = await tokenResponse.json();
     console.log('✅ Token obtained successfully');
     
-    // Get user info
+    // Get user info from Twitter
     const userResponse = await fetch('https://api.twitter.com/2/users/me?user.fields=id,username,name,profile_image_url', {
       headers: {
         'Authorization': `Bearer ${tokenData.access_token}`
