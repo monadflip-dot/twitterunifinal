@@ -145,7 +145,7 @@ export default function LoginPage() {
 
 	const handleTwitterLogin = async () => {
 		try {
-			console.log('🐦 Starting Twitter login...');
+			console.log('🐦 Starting Twitter OAuth 2.0 login...');
 			
 			// Check for existing session first
 			const hasExistingSession = await checkExistingTwitterSession();
@@ -155,40 +155,26 @@ export default function LoginPage() {
 				return;
 			}
 			
-			// Use simple popup login - más directo y funcional
-			console.log('🔄 Starting popup login...');
-			try {
-				const result = await signInWithPopup(auth, twitterProvider);
-				console.log('✅ Popup login successful');
-				await handleResult(result);
-			} catch (popupError) {
-				console.log('⚠️ Popup failed, error details:', popupError);
-				console.log('⚠️ Error code:', popupError?.code);
-				console.log('⚠️ Error message:', popupError?.message);
-				
-				// Check if it's an OAuth error
-				if (popupError?.code === 'auth/popup-closed-by-user') {
-					console.log('ℹ️ User closed popup, no action needed');
-					return;
-				}
-				
-				if (popupError?.code === 'auth/unauthorized-domain') {
-					alert('Error: Dominio no autorizado. Contacta al administrador.');
-					return;
-				}
-				
-				// Fallback to redirect for other errors
-				console.log('🔄 Falling back to redirect login...');
-				try {
-					await signInWithRedirect(auth, twitterProvider);
-				} catch (redirectError) {
-					console.error('💥 Redirect also failed:', redirectError);
-					alert('Error en el login de Twitter. Por favor, intenta de nuevo.');
-				}
+			// Start OAuth 2.0 flow - this will detect existing Twitter session
+			console.log('🔗 Starting OAuth 2.0 authorization flow...');
+			
+			// Get authorization URL from backend
+			const authResponse = await fetch('/api/auth/twitter/authorize');
+			
+			if (!authResponse.ok) {
+				throw new Error('Failed to get authorization URL');
 			}
+			
+			const authData = await authResponse.json();
+			console.log('🔗 OAuth 2.0 authorization URL received');
+			
+			// Redirect user to Twitter authorization
+			// Twitter will detect existing session and only ask for app authorization
+			window.location.href = authData.authUrl;
+			
 		} catch (err) {
-			console.error('💥 Twitter login failed:', err?.code, err?.message);
-			alert('Error en el login de Twitter: ' + (err?.message || 'Error desconocido'));
+			console.error('💥 Twitter OAuth 2.0 login failed:', err);
+			alert('Error en el login de Twitter: ' + err.message);
 		}
 	};
 

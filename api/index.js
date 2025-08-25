@@ -21,6 +21,192 @@ exports.ping = async (req, res) => {
   }
 };
 
+// Twitter OAuth 2.0 callback endpoint
+exports.twitterOAuth2Callback = async (req, res) => {
+  console.log('🔄 /api/auth/twitter/callback endpoint called');
+  
+  try {
+    const { code, state } = req.query;
+    
+    if (!code) {
+      console.error('❌ No authorization code received');
+      return res.status(400).json({ error: 'Authorization code required' });
+    }
+    
+    console.log('✅ Authorization code received:', code.substring(0, 10) + '...');
+    
+    // Exchange code for access token
+    const tokenResponse = await exchangeCodeForToken(code);
+    
+    if (!tokenResponse.success) {
+      console.error('❌ Failed to exchange code for token');
+      return res.status(400).json({ error: 'Token exchange failed' });
+    }
+    
+    // Get user profile using access token
+    const userProfile = await getUserProfile(tokenResponse.accessToken);
+    
+    if (!userProfile.success) {
+      console.error('❌ Failed to get user profile');
+      return res.status(400).json({ error: 'Failed to get user profile' });
+    }
+    
+    // Create or update user in database
+    const user = {
+      id: userProfile.data.id,
+      username: userProfile.data.username,
+      displayName: userProfile.data.name,
+      photo: userProfile.data.profile_image_url,
+      accessToken: tokenResponse.accessToken,
+      twitter: {
+        id: userProfile.data.id,
+        screenName: userProfile.data.username
+      }
+    };
+    
+    try {
+      await dbHelpers.createOrUpdateUser({
+        id: user.id,
+        username: user.username,
+        displayName: user.displayName,
+        photo: user.photo,
+        accessToken: user.accessToken
+      });
+      console.log('✅ User saved to database:', user.username);
+    } catch (dbError) {
+      console.error('❌ Error saving user to database:', dbError);
+    }
+    
+    // Generate JWT token
+    const token = jwt.sign(user, process.env.SESSION_SECRET || 'your-secret-key', { expiresIn: '24h' });
+    
+    // Redirect to frontend with token
+    const redirectUrl = `https://www.pfcwhitelist.xyz/?token=${encodeURIComponent(token)}`;
+    
+    console.log('✅ OAuth 2.0 flow completed, redirecting to frontend');
+    res.redirect(redirectUrl);
+    
+  } catch (err) {
+    console.error('💥 Error in Twitter OAuth 2.0 callback:', err);
+    res.redirect('https://www.pfcwhitelist.xyz/?error=oauth_failed');
+  }
+};
+
+// Exchange authorization code for access token
+async function exchangeCodeForToken(code) {
+  try {
+    const clientId = process.env.TWITTER_CONSUMER_KEY;
+    const clientSecret = process.env.TWITTER_CONSUMER_SECRET;
+    const redirectUri = 'https://www.pfcwhitelist.xyz/auth/callback';
+    const codeVerifier = 'E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM'; // Should match code challenge
+    
+    const response = await fetch('https://api.twitter.com/2/oauth2/token', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'Authorization': `Basic ${Buffer.from(`${clientId}:${clientSecret}`).toString('base64')}`
+      },
+      body: new URLSearchParams({
+        grant_type: 'authorization_code',
+        code: code,
+        redirect_uri: redirectUri,
+        code_verifier: codeVerifier
+      })
+    });
+    
+    if (!response.ok) {
+      console.error('❌ Token exchange failed:', response.status);
+      return { success: false };
+    }
+    
+    const data = await response.json();
+    console.log('✅ Token exchange successful');
+    
+    return {
+      success: true,
+      accessToken: data.access_token,
+      refreshToken: data.refresh_token
+    };
+    
+  } catch (error) {
+    console.error('💥 Error in token exchange:', error);
+    return { success: false };
+  }
+}
+
+// Get user profile using access token
+async function getUserProfile(accessToken) {
+  try {
+    const response = await fetch('https://api.twitter.com/2/users/me?user.fields=id,name,username,profile_image_url', {
+      headers: {
+        'Authorization': `Bearer ${accessToken}`
+      }
+    });
+    
+    if (!response.ok) {
+      console.error('❌ Failed to get user profile:', response.status);
+      return { success: false };
+    }
+    
+    const data = await response.json();
+    console.log('✅ User profile retrieved:', data.data.username);
+    
+    return {
+      success: true,
+      data: data.data
+    };
+    
+  } catch (error) {
+    console.error('💥 Error getting user profile:', error);
+    return { success: false };
+  }
+}
+
+// Twitter OAuth 2.0 authorization endpoint
+exports.twitterOAuth2Authorize = async (req, res) => {
+  console.log('🔗 /api/auth/twitter/authorize endpoint called');
+  
+  try {
+    // Twitter OAuth 2.0 configuration
+    const clientId = process.env.TWITTER_CONSUMER_KEY;
+    const redirectUri = 'https://www.pfcwhitelist.xyz/auth/callback';
+    const scope = 'tweet.read users.read follows.read';
+    
+    if (!clientId) {
+      console.error('❌ TWITTER_CONSUMER_KEY not configured');
+      return res.status(500).json({ error: 'Twitter configuration missing' });
+    }
+    
+    // Generate OAuth 2.0 authorization URL
+    const authUrl = `https://twitter.com/i/oauth2/authorize?` +
+      `response_type=code&` +
+      `client_id=${encodeURIComponent(clientId)}&` +
+      `redirect_uri=${encodeURIComponent(redirectUri)}&` +
+      `scope=${encodeURIComponent(scope)}&` +
+      `state=${Math.random().toString(36).substring(7)}&` +
+      `code_challenge_method=S256&` +
+      `code_challenge=${generateCodeChallenge()}`;
+    
+    console.log('🔗 Generated OAuth 2.0 authorization URL');
+    
+    return res.json({
+      success: true,
+      authUrl: authUrl,
+      message: 'OAuth 2.0 authorization URL generated'
+    });
+    
+  } catch (err) {
+    console.error('💥 Error in Twitter OAuth 2.0 authorize:', err);
+    return res.status(500).json({ error: 'Failed to generate authorization URL' });
+  }
+};
+
+// Helper function to generate PKCE code challenge
+function generateCodeChallenge() {
+  // For simplicity, using a fixed challenge. In production, generate this dynamically
+  return 'E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM';
+}
+
 // Firebase auth endpoint
 exports.firebaseAuth = async (req, res) => {
   console.log('📱 /api/auth/firebase endpoint called');
@@ -207,6 +393,18 @@ module.exports = async (req, res) => {
     if (req.url === '/api/debug/twitter' || req.url === '/api/debug/twitter/') {
       if (req.method === 'GET') {
         return await exports.debugTwitter(req, res);
+      }
+    }
+    
+    if (req.url === '/api/auth/twitter/authorize' || req.url === '/api/auth/twitter/authorize/') {
+      if (req.method === 'GET') {
+        return await exports.twitterOAuth2Authorize(req, res);
+      }
+    }
+    
+    if (req.url === '/auth/callback' || req.url === '/auth/callback/') {
+      if (req.method === 'GET') {
+        return await exports.twitterOAuth2Callback(req, res);
       }
     }
     
