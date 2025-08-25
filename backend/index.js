@@ -119,28 +119,56 @@ app.use(session({
 const authenticateJWT = (req, res, next) => {
   console.log('🔐 JWT Middleware executing...');
   console.log('🍪 Cookies received:', req.headers.cookie);
+  console.log('🔑 Authorization header:', req.headers.authorization ? 'Present' : 'Missing');
   
-  const token = req.cookies?.jwt || req.headers.authorization?.split(' ')[1];
+  // Try to get token from multiple sources
+  const token = req.cookies?.jwt || 
+                req.headers.authorization?.split(' ')[1] || 
+                req.headers.authorization;
   
   console.log('🎫 Token found:', token ? 'YES' : 'NO');
   if (token) {
     console.log('🎫 Token (first 50 chars):', token.substring(0, 50) + '...');
+    console.log('🎫 Token length:', token.length);
   }
   
   if (!token) {
     console.log('❌ No token, returning 401');
-    return res.status(401).json({ error: 'No token provided' });
+    return res.status(401).json({ 
+      error: 'No token provided',
+      details: 'Token not found in cookies or Authorization header'
+    });
   }
 
   try {
     console.log('🔍 Verifying JWT...');
     const decoded = jwt.verify(token, process.env.SESSION_SECRET || 'your-secret-key');
     console.log('✅ JWT valid, user:', decoded.username);
+    console.log('👤 User ID:', decoded.id);
+    console.log('🔑 Access Token available:', !!decoded.accessToken);
+    
     req.user = decoded;
     next();
   } catch (error) {
     console.log('❌ Error verifying JWT:', error.message);
-    return res.status(401).json({ error: 'Invalid token' });
+    console.log('❌ JWT verification failed for token:', token.substring(0, 50) + '...');
+    
+    if (error.name === 'TokenExpiredError') {
+      return res.status(401).json({ 
+        error: 'Token expired',
+        details: 'JWT token has expired, please login again'
+      });
+    } else if (error.name === 'JsonWebTokenError') {
+      return res.status(401).json({ 
+        error: 'Invalid token',
+        details: 'JWT token is malformed or invalid'
+      });
+    } else {
+      return res.status(401).json({ 
+        error: 'Token verification failed',
+        details: error.message
+      });
+    }
   }
 };
 
@@ -429,6 +457,39 @@ app.get('/api/user', authenticateJWT, (req, res) => {
   console.log('👤 Authenticated user with JWT:', req.user.username);
   console.log('🔍 Full user object from JWT:', JSON.stringify(req.user, null, 2));
   res.json({ user: req.user });
+});
+
+// Debug endpoint to check JWT token status
+app.get('/api/debug/token', authenticateJWT, (req, res) => {
+  try {
+    const token = req.cookies?.jwt || req.headers.authorization?.split(' ')[1] || req.headers.authorization;
+    
+    res.json({
+      success: true,
+      tokenStatus: 'valid',
+      tokenInfo: {
+        exists: !!token,
+        length: token ? token.length : 0,
+        firstChars: token ? token.substring(0, 50) + '...' : 'none',
+        source: req.cookies?.jwt ? 'cookie' : req.headers.authorization ? 'header' : 'none'
+      },
+      user: {
+        id: req.user.id,
+        username: req.user.username,
+        displayName: req.user.displayName,
+        hasAccessToken: !!req.user.accessToken
+      },
+      headers: {
+        cookie: req.headers.cookie ? 'present' : 'missing',
+        authorization: req.headers.authorization ? 'present' : 'missing'
+      }
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
 });
 
 // Wallet endpoints

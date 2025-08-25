@@ -96,64 +96,66 @@ function Dashboard({ user, onLogout }) {
   };
 
   const handleMissionComplete = async (missionId) => {
-    if (loadingMissionId === missionId) return; // Evitar múltiples clicks
+    if (loadingMissionId) return;
     
     setLoadingMissionId(missionId);
     
     try {
+      // Debug: Verificar token antes de la petición
+      const token = localStorage.getItem('jwt_token');
+      console.log('🔍 Debug - Token antes de completar misión:');
+      console.log('🎫 Token exists:', !!token);
+      if (token) {
+        console.log('🎫 Token (first 50 chars):', token.substring(0, 50) + '...');
+        console.log('🎫 Token length:', token.length);
+      }
+      
       // Simular delay de 5 segundos
       await new Promise(resolve => setTimeout(resolve, 5000));
       
-      const token = localStorage.getItem('jwt_token');
       const response = await fetch(`${API_URL}/api/missions/${missionId}/complete`, {
         method: 'POST',
         headers: {
+          'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
-        }
+        },
+        credentials: 'include'
       });
-
+      
+      console.log('📡 Response status:', response.status);
+      console.log('📡 Response headers:', response.headers);
+      
       if (response.ok) {
         const data = await response.json();
-        console.log('Respuesta de la API:', data); // Debug log
+        console.log('✅ Mission completion response:', data);
         
-        if (data.success) {
-          // Misión completada exitosamente
-          const mission = missions.find(m => m.id === missionId);
-          console.log('Misión encontrada:', mission); // Debug log
-          console.log('Puntos de la misión:', mission?.points); // Debug log
-          
-          setMissions(prev => {
-            const newMissions = prev.map(m => m.id === missionId ? { ...m, completed: true } : m);
-            console.log('Misiones después de actualizar:', newMissions); // Debug log
-            return newMissions;
-          });
-          
-          // Actualizar estadísticas usando los puntos de la misión local
-          const pointsToAdd = mission?.points || 0;
-          console.log('Puntos a agregar:', pointsToAdd); // Debug log
-          
-          setStats(prev => {
-            const newStats = {
-              ...prev,
-              totalPoints: prev.totalPoints + pointsToAdd,
-              completedMissions: prev.completedMissions + 1,
-              pendingMissions: Math.max(prev.pendingMissions - 1, 0)
-            };
-            console.log('Nuevas estadísticas:', newStats); // Debug log
-            return newStats;
-          });
-          
-          // Mostrar mensaje de éxito
-          alert(`✅ ${data.message || 'Mission completed successfully!'}`);
-        } else {
-          alert('Error completing the mission. Please try again.');
+        // Update missions state
+        setMissions(prevMissions => 
+          prevMissions.map(mission => 
+            mission.id === missionId 
+              ? { ...mission, completed: true }
+              : mission
+          )
+        );
+        
+        // Update user stats
+        if (data.points) {
+          setStats(prevStats => ({
+            ...prevStats,
+            totalPoints: (prevStats.totalPoints || 0) + data.points,
+            completedMissions: (prevStats.completedMissions || 0) + 1
+          }));
         }
+        
+        alert(`✅ ${data.message || 'Mission completed successfully!'}`);
       } else {
+        const errorText = await response.text();
+        console.error('❌ Mission completion failed:', response.status, errorText);
         alert('Error completing the mission. Please try again.');
       }
     } catch (error) {
-      console.error('Error completing mission:', error);
-      alert('Connection error. Please try again.');
+      console.error('💥 Error in handleMissionComplete:', error);
+      alert('Error completing the mission. Please try again.');
     } finally {
       setLoadingMissionId(null);
     }
