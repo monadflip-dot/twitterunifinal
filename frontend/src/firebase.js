@@ -24,9 +24,12 @@ export const db = getFirestore(app);
 export const twitterProvider = new TwitterAuthProvider();
 
 // 🔒 CONFIGURACIÓN OPTIMIZADA PARA OAUTH 1.0A
-// Permitir que Twitter recuerde la sesión del usuario
+// Usar sesión existente de Twitter y no forzar nuevo login
 twitterProvider.setCustomParameters({
-  'lang': 'en' // Solo idioma específico, sin forzar login
+  'lang': 'en', // Solo idioma específico
+  'force_login': 'false', // NO forzar login, usar sesión existente
+  'screen_name': '', // Permitir que Twitter use la sesión actual
+  'x_auth_access_type': 'read' // Solo permisos de lectura
 });
 
 export default app;

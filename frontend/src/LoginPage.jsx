@@ -102,9 +102,58 @@ export default function LoginPage() {
 		}
 	};
 
+	// Check if user already has an active Twitter session
+	const checkExistingTwitterSession = async () => {
+		try {
+			console.log('🔍 Checking for existing Twitter session...');
+			
+			// Check if we have a stored JWT token
+			const existingToken = localStorage.getItem('jwt_token');
+			if (existingToken) {
+				console.log('✅ Found existing JWT token, checking validity...');
+				
+				// Verify token with backend
+				const response = await fetch('/api/user', {
+					headers: {
+						'Authorization': `Bearer ${existingToken}`
+					}
+				});
+				
+				if (response.ok) {
+					console.log('✅ Existing token is valid, user already authenticated');
+					return true;
+				} else {
+					console.log('⚠️ Existing token expired, removing...');
+					localStorage.removeItem('jwt_token');
+				}
+			}
+			
+			// Check if Firebase has an active user
+			const currentUser = auth.currentUser;
+			if (currentUser && currentUser.providerData.some(provider => provider.providerId === 'twitter.com')) {
+				console.log('✅ Found active Firebase user with Twitter provider');
+				return true;
+			}
+			
+			console.log('❌ No active Twitter session found');
+			return false;
+		} catch (error) {
+			console.error('💥 Error checking existing session:', error);
+			return false;
+		}
+	};
+
 	const handleTwitterLogin = async () => {
 		try {
 			console.log('🐦 Starting Twitter login...');
+			
+			// Check for existing session first
+			const hasExistingSession = await checkExistingTwitterSession();
+			if (hasExistingSession) {
+				console.log('🔄 Using existing session, redirecting to dashboard...');
+				window.location.reload();
+				return;
+			}
 			
 			// Try popup first (better UX)
 			try {
