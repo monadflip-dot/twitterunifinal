@@ -52,5 +52,6 @@
     "NODE_ENV": "production"
   },
   "buildCommand": "cd frontend && npm install && npm run build",
-  "outputDirectory": "frontend/dist"
+  "outputDirectory": "frontend/dist",
+  "comment": "Forcing Vercel to detect changes and redeploy"
 }
