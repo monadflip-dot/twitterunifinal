@@ -360,6 +360,21 @@ app.get('/auth/twitter', (req, res) => {
 
 console.log('✅ Twitter OAuth routes registered successfully');
 
+// 🔍 NEW: Test endpoint to verify Twitter auth routes are working
+app.get('/auth/test', (req, res) => {
+  console.log('🧪 Twitter auth test endpoint called');
+  res.json({
+    success: true,
+    message: 'Twitter auth routes are working correctly',
+    timestamp: new Date().toISOString(),
+    routes: {
+      '/auth/twitter': 'Twitter OAuth initiation',
+      '/auth/twitter/callback': 'Twitter OAuth callback',
+      '/auth/test': 'This test endpoint'
+    }
+  });
+});
+
 // Helper function to generate PKCE code challenge
 function generateCodeChallenge(verifier) {
   const crypto = require('crypto');
