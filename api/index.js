@@ -462,17 +462,59 @@ exports.getMissions = async (req, res) => {
     console.log('✅ JWT token verified for user:', decoded.username);
     
     try {
-      // Get user's progress from Firebase to check completed missions
-      const userProgressSnapshot = await firestoreDb
-        .collection('userProgress')
-        .where('userId', '==', decoded.id)
-        .get();
+      // FIXED: Use the same comprehensive logic to detect completed missions
+      let completedMissions = [];
       
-      let userProgress = null;
-      if (!userProgressSnapshot.empty) {
-        userProgress = userProgressSnapshot.docs[0].data();
-        console.log('✅ User progress found:', userProgress);
+      // 1. First try userProgress collection (aggregated data)
+      try {
+        const userProgressSnapshot = await firestoreDb
+          .collection('userProgress')
+          .where('userId', '==', decoded.id)
+          .get();
+        
+        if (!userProgressSnapshot.empty) {
+          const userProgress = userProgressSnapshot.docs[0].data();
+          console.log('✅ User progress found in userProgress collection for missions');
+          
+          // Get completed missions from userProgress
+          if (userProgress.completedMissions) {
+            // Convert object values to array of mission IDs
+            completedMissions = Object.values(userProgress.completedMissions);
+            console.log('✅ Completed missions from userProgress for missions endpoint:', completedMissions);
+          }
+        }
+      } catch (error) {
+        console.log('⚠️ userProgress collection not accessible for missions:', error.message);
       }
+      
+      // 2. If no data in userProgress, check user_progress collection (individual records)
+      if (completedMissions.length === 0) {
+        try {
+          console.log('🔍 Checking user_progress collection for individual mission records in missions endpoint...');
+          const userProgressIndividualSnapshot = await firestoreDb
+            .collection('user_progress')
+            .where('userId', '==', decoded.id)
+            .get();
+          
+          if (!userProgressIndividualSnapshot.empty) {
+            console.log('✅ Found individual mission records in user_progress for missions endpoint');
+            
+            userProgressIndividualSnapshot.forEach(doc => {
+              const missionData = doc.data();
+              if (missionData.missionId) {
+                completedMissions.push(missionData.missionId);
+                console.log('✅ Mission completed (missions endpoint):', missionData.missionId);
+              }
+            });
+          }
+        } catch (error) {
+          console.log('⚠️ user_progress collection not accessible for missions:', error.message);
+        }
+      }
+      
+      // Remove duplicates and ensure we have unique mission IDs
+      completedMissions = [...new Set(completedMissions)];
+      console.log('✅ Final completed missions for missions endpoint:', completedMissions);
       
       // Get missions from Firebase
       const missionsSnapshot = await firestoreDb.collection('missions').get();
@@ -480,15 +522,11 @@ exports.getMissions = async (req, res) => {
       
       missionsSnapshot.forEach(doc => {
         const missionData = doc.data();
+        const missionId = doc.id;
         
         // Check if this mission is completed by the user
-        let isCompleted = false;
-        if (userProgress && userProgress.completedMissions) {
-          // Check if mission ID exists in completedMissions object
-          const missionId = doc.id;
-          isCompleted = userProgress.completedMissions.hasOwnProperty(missionId) || 
-                       Object.values(userProgress.completedMissions).includes(parseInt(missionId));
-        }
+        const isCompleted = completedMissions.includes(parseInt(missionId)) || 
+                           completedMissions.includes(missionId);
         
         missions.push({
           id: doc.id,
@@ -503,13 +541,14 @@ exports.getMissions = async (req, res) => {
       });
       
       console.log('✅ Missions loaded from Firebase with completion status:', missions.length);
-      console.log('✅ Completed missions count:', missions.filter(m => m.completed).length);
+      console.log('✅ Completed missions count in missions endpoint:', missions.filter(m => m.completed).length);
       
       return res.json({
         success: true,
         missions: missions,
         count: missions.length,
-        userProgress: userProgress
+        completedMissions: completedMissions,
+        userProgress: { completedMissions: completedMissions }
       });
       
     } catch (firebaseError) {
@@ -575,16 +614,88 @@ exports.getUserStats = async (req, res) => {
     console.log('✅ JWT token verified for user:', decoded.username);
     
     try {
-      // FIXED: Use correct collection 'userProgress' (singular) as shown in Firebase
-      const userProgressSnapshot = await firestoreDb
-        .collection('userProgress')
-        .where('userId', '==', decoded.id)
-        .get();
-      
+      // FIXED: Check ALL possible collections for user progress
       let userProgress = null;
-      if (!userProgressSnapshot.empty) {
-        userProgress = userProgressSnapshot.docs[0].data();
-        console.log('✅ User progress found in userProgress collection:', userProgress);
+      let completedMissions = [];
+      let totalPoints = 0;
+      
+      // 1. First try userProgress collection (aggregated data)
+      try {
+        const userProgressSnapshot = await firestoreDb
+          .collection('userProgress')
+          .where('userId', '==', decoded.id)
+          .get();
+        
+        if (!userProgressSnapshot.empty) {
+          userProgress = userProgressSnapshot.docs[0].data();
+          console.log('✅ User progress found in userProgress collection:', userProgress);
+          
+          // Get completed missions from userProgress
+          if (userProgress.completedMissions) {
+            // Convert object values to array of mission IDs
+            completedMissions = Object.values(userProgress.completedMissions);
+            console.log('✅ Completed missions from userProgress:', completedMissions);
+          }
+          
+          totalPoints = userProgress.totalPoints || 0;
+          console.log('✅ Total points from userProgress:', totalPoints);
+        }
+      } catch (error) {
+        console.log('⚠️ userProgress collection not accessible:', error.message);
+      }
+      
+      // 2. If no data in userProgress, check user_progress collection (individual records)
+      if (completedMissions.length === 0) {
+        try {
+          console.log('🔍 Checking user_progress collection for individual mission records...');
+          const userProgressIndividualSnapshot = await firestoreDb
+            .collection('user_progress')
+            .where('userId', '==', decoded.id)
+            .get();
+          
+          if (!userProgressIndividualSnapshot.empty) {
+            console.log('✅ Found individual mission records in user_progress');
+            
+            userProgressIndividualSnapshot.forEach(doc => {
+              const missionData = doc.data();
+              if (missionData.missionId) {
+                completedMissions.push(missionData.missionId);
+                console.log('✅ Mission completed:', missionData.missionId, 'Points:', missionData.pointsEarned);
+              }
+            });
+            
+            // Calculate total points from individual records
+            totalPoints = userProgressIndividualSnapshot.docs.reduce((sum, doc) => {
+              const data = doc.data();
+              return sum + (data.pointsEarned || 0);
+            }, 0);
+            
+            console.log('✅ Total points calculated from individual records:', totalPoints);
+          }
+        } catch (error) {
+          console.log('⚠️ user_progress collection not accessible:', error.message);
+        }
+      }
+      
+      // 3. If still no data, check user_stats collection
+      if (completedMissions.length === 0) {
+        try {
+          console.log('🔍 Checking user_stats collection...');
+          const userStatsSnapshot = await firestoreDb
+            .collection('user_stats')
+            .where('userId', '==', decoded.id)
+            .get();
+          
+          if (!userStatsSnapshot.empty) {
+            const userStats = userStatsSnapshot.docs[0].data();
+            console.log('✅ User stats found:', userStats);
+            
+            totalPoints = userStats.totalPoints || 0;
+            // Note: user_stats might not have individual mission IDs
+          }
+        } catch (error) {
+          console.log('⚠️ user_stats collection not accessible:', error.message);
+        }
       }
       
       // Get all missions to calculate stats
@@ -594,31 +705,21 @@ exports.getUserStats = async (req, res) => {
         allMissions.push(doc.data());
       });
       
-      // Calculate statistics based on actual Firebase structure
-      let completedMissions = 0;
-      let totalPoints = 0;
-      
-      if (userProgress) {
-        // Use the actual structure: completedMissions as an object with numeric keys
-        if (userProgress.completedMissions) {
-          // Count the number of completed missions from the object
-          completedMissions = Object.keys(userProgress.completedMissions).length;
-          console.log('✅ Completed missions count from object:', completedMissions);
-        }
-        totalPoints = userProgress.totalPoints || 0;
-        console.log('✅ Total points from userProgress:', totalPoints);
-      }
+      // Remove duplicates and ensure we have unique mission IDs
+      completedMissions = [...new Set(completedMissions)];
       
       const stats = {
         totalPoints: totalPoints,
-        completedMissions: completedMissions,
+        completedMissions: completedMissions.length,
         totalMissions: allMissions.length,
-        pendingMissions: allMissions.length - completedMissions,
+        pendingMissions: allMissions.length - completedMissions.length,
+        completedMissionIds: completedMissions, // Array of completed mission IDs
         userProgress: userProgress,
         allMissions: allMissions
       };
       
-      console.log('✅ User stats calculated:', stats);
+      console.log('✅ Final user stats calculated:', stats);
+      console.log('✅ Completed mission IDs:', completedMissions);
       
       return res.json({
         success: true,
