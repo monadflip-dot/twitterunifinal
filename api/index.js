@@ -688,6 +688,39 @@ exports.initializeMissions = async (req, res) => {
           requirements: ['Share on social media'],
           createdAt: new Date(),
           updatedAt: new Date()
+        },
+        {
+          id: '5',
+          title: 'Like Official Posts',
+          description: 'Like our official posts on Twitter',
+          points: 60,
+          completed: false,
+          type: 'engagement',
+          requirements: ['Like official posts'],
+          createdAt: new Date(),
+          updatedAt: new Date()
+        },
+        {
+          id: '6',
+          title: 'Comment on Posts',
+          description: 'Leave meaningful comments on our posts',
+          points: 80,
+          completed: false,
+          type: 'engagement',
+          requirements: ['Comment on posts'],
+          createdAt: new Date(),
+          updatedAt: new Date()
+        },
+        {
+          id: '7',
+          title: 'Invite Friends',
+          description: 'Invite your friends to join the whitelist',
+          points: 150,
+          completed: false,
+          type: 'referral',
+          requirements: ['Invite friends'],
+          createdAt: new Date(),
+          updatedAt: new Date()
         }
       ];
       
