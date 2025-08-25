@@ -1,5 +1,5 @@
 import { initializeApp } from 'firebase/app';
-import { getAuth, TwitterAuthProvider } from 'firebase/auth';
+import { getAuth, TwitterAuthProvider, setPersistence, browserLocalPersistence } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 
 // Configuración de Firebase hardcodeada para producción
@@ -20,16 +20,27 @@ const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 export const db = getFirestore(app);
 
+// Configure Firebase persistence for longer sessions
+setPersistence(auth, browserLocalPersistence)
+  .then(() => {
+    console.log('✅ Firebase persistence set to local (longer sessions)');
+  })
+  .catch((error) => {
+    console.error('❌ Error setting Firebase persistence:', error);
+  });
+
 // Configure Twitter provider with specific settings
 export const twitterProvider = new TwitterAuthProvider();
 
-// 🔒 CONFIGURACIÓN OPTIMIZADA PARA OAUTH 1.0A
-// Usar sesión existente de Twitter y no forzar nuevo login
+// 🔒 CONFIGURACIÓN OPTIMIZADA PARA OAUTH 1.0A + SESSION PERSISTENCE
+// Configuración específica para mantener sesiones y reducir re-autenticación
 twitterProvider.setCustomParameters({
-  'lang': 'en', // Solo idioma específico
-  'force_login': 'false', // NO forzar login, usar sesión existente
+  'lang': 'en', // Idioma específico
+  'force_login': 'false', // NO forzar login, usar sesión existente si es posible
   'screen_name': '', // Permitir que Twitter use la sesión actual
-  'x_auth_access_type': 'read' // Solo permisos de lectura
+  'x_auth_access_type': 'read', // Solo permisos de lectura
+  'oauth_callback': 'https://www.pfcwhitelist.xyz', // Callback específico
+  'include_email': 'false' // No solicitar email para reducir permisos
 });
 
 export default app;

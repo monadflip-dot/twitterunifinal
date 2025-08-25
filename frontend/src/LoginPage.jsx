@@ -155,56 +155,27 @@ export default function LoginPage() {
 				return;
 			}
 			
-			// Try popup first (better UX)
+			// Use redirect instead of popup for better session handling
+			console.log('🔄 Starting redirect login for better session handling...');
 			try {
-				console.log('🔄 Attempting popup login...');
-				const result = await signInWithPopup(auth, twitterProvider);
-				console.log('✅ Popup login successful');
-				await handleResult(result);
-			} catch (popupError) {
-				console.log('⚠️ Popup failed, error details:', popupError);
-				console.log('⚠️ Error code:', popupError?.code);
-				console.log('⚠️ Error message:', popupError?.message);
+				await signInWithRedirect(auth, twitterProvider);
+			} catch (redirectError) {
+				console.error('💥 Redirect failed:', redirectError);
 				
-				// Check if it's an OAuth error
-				if (popupError?.code === 'auth/popup-closed-by-user') {
-					console.log('ℹ️ User closed popup, no action needed');
-					return;
-				}
-				
-				if (popupError?.code === 'auth/unauthorized-domain') {
-					alert('Error: Dominio no autorizado. Contacta al administrador.');
-					return;
-				}
-				
-				// Only clear auth state if there's a token/authentication error
-				if (popupError?.code === 'auth/invalid-credential' || 
-					popupError?.code === 'auth/user-token-expired' ||
-					popupError?.message?.includes('token')) {
-					console.log('🔄 Clearing auth state due to token error...');
-					await clearAuthState();
-				}
-				
-				// Fallback to redirect for other errors
-				console.log('🔄 Falling back to redirect login...');
+				// Fallback to popup if redirect fails
+				console.log('🔄 Falling back to popup login...');
 				try {
-					await signInWithRedirect(auth, twitterProvider);
-				} catch (redirectError) {
-					console.error('💥 Redirect also failed:', redirectError);
+					const result = await signInWithPopup(auth, twitterProvider);
+					console.log('✅ Popup login successful');
+					await handleResult(result);
+				} catch (popupError) {
+					console.log('⚠️ Popup also failed:', popupError);
 					alert('Error en el login de Twitter. Por favor, intenta de nuevo.');
 				}
 			}
 		} catch (err) {
 			console.error('💥 Twitter login failed:', err?.code, err?.message);
-			
-			// Provide more specific error messages
-			if (err?.code === 'auth/unauthorized-domain') {
-				alert('Error: Este dominio no está autorizado para usar Twitter login.');
-			} else if (err?.code === 'auth/network-request-failed') {
-				alert('Error de conexión. Verifica tu internet e intenta de nuevo.');
-			} else {
-				alert('Error en el login de Twitter: ' + (err?.message || 'Error desconocido'));
-			}
+			alert('Error en el login de Twitter: ' + (err?.message || 'Error desconocido'));
 		}
 	};
 
