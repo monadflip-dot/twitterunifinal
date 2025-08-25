@@ -207,6 +207,23 @@ exports.getUserStats = async (req, res) => {
   }
 };
 
+// --- ENDPOINT: /api/user ---
+exports.getUser = async (req, res) => {
+  try {
+    const token = req.headers.authorization?.split(' ')[1] || req.cookies?.token || req.query?.token;
+    if (!token) return res.status(401).json({ error: 'No token provided' });
+    const decoded = jwt.verify(token, process.env.SESSION_SECRET || 'your-secret-key');
+    return res.json({ user: {
+      id: decoded.id,
+      username: decoded.username,
+      displayName: decoded.displayName,
+      photo: decoded.photo
+    }});
+  } catch (err) {
+    return res.status(401).json({ error: 'Invalid or expired token' });
+  }
+};
+
 // --- HANDLER PRINCIPAL PARA VERCEL ---
 module.exports = async (req, res) => {
   // CORS
@@ -219,6 +236,7 @@ module.exports = async (req, res) => {
   if (req.url.startsWith('/auth/callback')) return exports.twitterOAuth2Callback(req, res);
   if (req.url === '/api/missions') return exports.getMissions(req, res);
   if (req.url === '/api/user/stats') return exports.getUserStats(req, res);
+  if (req.url === '/api/user') return exports.getUser(req, res);
   // Ping
   if (req.url === '/ping') return res.json({ message: 'pong', status: 'working' });
   // Default
