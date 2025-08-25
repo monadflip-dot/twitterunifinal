@@ -29,15 +29,23 @@ exports.twitterAuth = async (req, res) => {
     // Check if required environment variables are set for OAuth v1
     if (!process.env.TWITTER_CONSUMER_KEY || !process.env.TWITTER_CONSUMER_SECRET) {
       console.log('❌ Missing Twitter OAuth v1 environment variables');
+      console.log('🔍 TWITTER_CONSUMER_KEY:', process.env.TWITTER_CONSUMER_KEY ? '✅ Set' : '❌ Missing');
+      console.log('🔍 TWITTER_CONSUMER_SECRET:', process.env.TWITTER_CONSUMER_SECRET ? '✅ Set' : '❌ Missing');
       return res.status(500).json({
         error: 'Twitter OAuth v1 configuration missing',
         details: 'TWITTER_CONSUMER_KEY or TWITTER_CONSUMER_SECRET not set'
       });
     }
     
+    console.log('✅ Twitter environment variables found');
+    console.log('🔍 Consumer Key length:', process.env.TWITTER_CONSUMER_KEY.length);
+    console.log('🔍 Consumer Secret length:', process.env.TWITTER_CONSUMER_SECRET.length);
+    
     // For OAuth v1, we need to initiate the OAuth flow
     // This will redirect to Twitter for authorization
     const { TwitterApi } = require('twitter-api-v2');
+    
+    console.log('📦 Twitter API v2 package loaded successfully');
     
     // Create Twitter client with consumer keys
     const client = new TwitterApi({
@@ -45,12 +53,19 @@ exports.twitterAuth = async (req, res) => {
       appSecret: process.env.TWITTER_CONSUMER_SECRET,
     });
     
+    console.log('🔧 Twitter client created successfully');
+    
+    const callbackUrl = 'https://www.pfcwhitelist.xyz/auth/twitter/callback';
+    console.log('🔗 Callback URL:', callbackUrl);
+    
     // Generate OAuth v1 authorization URL
+    console.log('🔄 Generating OAuth v1 authorization link...');
     const authLink = await client.generateAuthLink(
-      'https://www.pfcwhitelist.xyz/auth/twitter/callback',
+      callbackUrl,
       { scope: ['tweet.read', 'users.read'] }
     );
     
+    console.log('✅ OAuth v1 authorization link generated successfully');
     console.log('🔗 Redirecting to Twitter OAuth v1:', authLink.url);
     
     // Redirect to Twitter for authorization
@@ -58,9 +73,19 @@ exports.twitterAuth = async (req, res) => {
     
   } catch (error) {
     console.error('💥 Error in Twitter OAuth v1:', error);
+    console.error('🔍 Error details:', {
+      name: error.name,
+      message: error.message,
+      code: error.code,
+      statusCode: error.statusCode,
+      stack: error.stack
+    });
+    
     res.status(500).json({
       error: 'Twitter OAuth v1 authentication failed',
-      details: error.message
+      details: error.message,
+      code: error.code || 'unknown',
+      statusCode: error.statusCode || 'unknown'
     });
   }
 };
@@ -268,6 +293,47 @@ exports.getUser = async (req, res) => {
   }
 };
 
+// Debug endpoint to check Twitter environment variables
+exports.debugTwitter = async (req, res) => {
+  console.log('🔍 Debug Twitter environment variables');
+  
+  try {
+    const twitterVars = {
+      TWITTER_CONSUMER_KEY: {
+        exists: !!process.env.TWITTER_CONSUMER_KEY,
+        length: process.env.TWITTER_CONSUMER_KEY ? process.env.TWITTER_CONSUMER_KEY.length : 0,
+        preview: process.env.TWITTER_CONSUMER_KEY ? 
+          process.env.TWITTER_CONSUMER_KEY.substring(0, 8) + '...' : 'Not set'
+      },
+      TWITTER_CONSUMER_SECRET: {
+        exists: !!process.env.TWITTER_CONSUMER_SECRET,
+        length: process.env.TWITTER_CONSUMER_SECRET ? process.env.TWITTER_CONSUMER_SECRET.length : 0,
+        preview: process.env.TWITTER_CONSUMER_SECRET ? 
+          process.env.TWITTER_CONSUMER_SECRET.substring(0, 8) + '...' : 'Not set'
+      },
+      SESSION_SECRET: {
+        exists: !!process.env.SESSION_SECRET,
+        length: process.env.SESSION_SECRET ? process.env.SESSION_SECRET.length : 0
+      }
+    };
+    
+    console.log('🔍 Twitter environment variables status:', twitterVars);
+    
+    res.json({
+      message: 'Twitter environment variables debug info',
+      twitter: twitterVars,
+      timestamp: new Date().toISOString()
+    });
+    
+  } catch (error) {
+    console.error('💥 Error in debug endpoint:', error);
+    res.status(500).json({
+      error: 'Debug endpoint failed',
+      details: error.message
+    });
+  }
+};
+
 // Main handler for Vercel
 module.exports = async (req, res) => {
   console.log('🚀 Main handler called');
@@ -314,6 +380,10 @@ module.exports = async (req, res) => {
       if (req.method === 'GET') {
         return await exports.getUser(req, res);
       }
+    }
+    
+    if (req.url === '/debug/twitter' || req.url === '/debug/twitter/') {
+      return await exports.debugTwitter(req, res);
     }
     
     // Default response for unmatched routes
