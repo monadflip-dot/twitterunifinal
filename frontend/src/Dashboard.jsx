@@ -101,7 +101,7 @@ function Dashboard({ user, onLogout }) {
     setLoadingMissionId(missionId);
     
     try {
-      // Debug: Verificar token antes de la petición
+      // Debug: Verificar token antes de completar misión
       const token = localStorage.getItem('jwt_token');
       console.log('🔍 Debug - Token antes de completar misión:');
       console.log('🎫 Token exists:', !!token);
@@ -149,8 +149,31 @@ function Dashboard({ user, onLogout }) {
         
         alert(`✅ ${data.message || 'Mission completed successfully!'}`);
       } else {
-        const errorText = await response.text();
-        console.error('❌ Mission completion failed:', response.status, errorText);
+        const errorData = await response.json().catch(() => ({}));
+        console.error('❌ Mission completion failed:', response.status, errorData);
+        
+        // 🔍 NEW: Handle re-authentication error
+        if (errorData.code === 'MISSING_ACCESS_TOKEN' || 
+            errorData.action === 'reconnect_twitter') {
+          console.log('🔄 Twitter access token missing, forcing re-authentication...');
+          
+          // Clear invalid token
+          localStorage.removeItem('jwt_token');
+          
+          // Show user-friendly message
+          const shouldReconnect = confirm(
+            'Tu sesión de Twitter ha expirado o no es válida. ' +
+            '¿Quieres volver a conectarte con Twitter para completar misiones?'
+          );
+          
+          if (shouldReconnect) {
+            // Redirect to login page
+            window.location.href = '/';
+          }
+          return;
+        }
+        
+        // Handle other errors
         alert('Error completing the mission. Please try again.');
       }
     } catch (error) {

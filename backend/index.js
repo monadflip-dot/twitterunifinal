@@ -147,6 +147,18 @@ const authenticateJWT = (req, res, next) => {
     console.log('👤 User ID:', decoded.id);
     console.log('🔑 Access Token available:', !!decoded.accessToken);
     
+    // 🔍 NEW: Check if JWT has Twitter access token
+    if (!decoded.accessToken) {
+      console.log('⚠️ JWT valid but missing Twitter access token - forcing re-auth');
+      return res.status(403).json({
+        error: 'Twitter access token not available. Please reconnect your Twitter account.',
+        details: 'User needs to re-authenticate with Twitter',
+        action: 'reconnect_twitter',
+        code: 'MISSING_ACCESS_TOKEN'
+      });
+    }
+    
+    console.log('✅ JWT has valid Twitter access token, proceeding...');
     req.user = decoded;
     next();
   } catch (error) {
@@ -269,6 +281,27 @@ app.post('/api/auth/logout', (req, res) => {
     return res.json({ success: true });
   } catch (e) {
     return res.status(500).json({ error: 'Logout failed' });
+  }
+});
+
+// 🔍 NEW: Endpoint to clear invalid session and force re-auth
+app.post('/api/auth/clear-session', (req, res) => {
+  console.log('📱 /api/auth/clear-session endpoint called');
+  try {
+    // Clear JWT cookie
+    res.clearCookie('jwt', {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax'
+    });
+    
+    return res.json({ 
+      success: true, 
+      message: 'Session cleared successfully. Please re-authenticate with Twitter.',
+      action: 'reconnect_twitter'
+    });
+  } catch (e) {
+    return res.status(500).json({ error: 'Failed to clear session' });
   }
 });
 
