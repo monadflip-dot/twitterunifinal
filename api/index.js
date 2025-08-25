@@ -460,16 +460,41 @@ exports.getMissions = async (req, res) => {
     // Verify JWT token
     const decoded = jwt.verify(token, process.env.SESSION_SECRET || 'your-secret-key');
     console.log('✅ JWT token verified for user:', decoded.username);
+    console.log('🔍 JWT user ID:', decoded.id);
     
     try {
       // FIXED: Use the same comprehensive logic to detect completed missions
       let completedMissions = [];
       
-      // 1. First try userProgress collection (aggregated data)
+      // 1. First try to find the user in the users collection to get the correct Firebase ID
+      let firebaseUserId = null;
+      try {
+        console.log('🔍 Searching for user in users collection for missions...');
+        const usersSnapshot = await firestoreDb
+          .collection('users')
+          .where('username', '==', decoded.username)
+          .get();
+        
+        if (!usersSnapshot.empty) {
+          const userData = usersSnapshot.docs[0].data();
+          firebaseUserId = userData.id;
+          console.log('✅ Found user in users collection with Firebase ID for missions:', firebaseUserId);
+        } else {
+          console.log('⚠️ User not found in users collection for missions, trying with JWT ID');
+          firebaseUserId = decoded.id;
+        }
+      } catch (error) {
+        console.log('⚠️ Error searching users collection for missions:', error.message);
+        firebaseUserId = decoded.id;
+      }
+      
+      console.log('🎯 Using Firebase User ID for missions queries:', firebaseUserId);
+      
+      // 2. First try userProgress collection (aggregated data)
       try {
         const userProgressSnapshot = await firestoreDb
           .collection('userProgress')
-          .where('userId', '==', decoded.id)
+          .where('userId', '==', firebaseUserId)
           .get();
         
         if (!userProgressSnapshot.empty) {
@@ -487,13 +512,13 @@ exports.getMissions = async (req, res) => {
         console.log('⚠️ userProgress collection not accessible for missions:', error.message);
       }
       
-      // 2. If no data in userProgress, check user_progress collection (individual records)
+      // 3. If no data in userProgress, check user_progress collection (individual records)
       if (completedMissions.length === 0) {
         try {
           console.log('🔍 Checking user_progress collection for individual mission records in missions endpoint...');
           const userProgressIndividualSnapshot = await firestoreDb
             .collection('user_progress')
-            .where('userId', '==', decoded.id)
+            .where('userId', '==', firebaseUserId)
             .get();
           
           if (!userProgressIndividualSnapshot.empty) {
@@ -548,7 +573,8 @@ exports.getMissions = async (req, res) => {
         missions: missions,
         count: missions.length,
         completedMissions: completedMissions,
-        userProgress: { completedMissions: completedMissions }
+        userProgress: { completedMissions: completedMissions },
+        firebaseUserId: firebaseUserId
       });
       
     } catch (firebaseError) {
@@ -612,18 +638,44 @@ exports.getUserStats = async (req, res) => {
     // Verify JWT token
     const decoded = jwt.verify(token, process.env.SESSION_SECRET || 'your-secret-key');
     console.log('✅ JWT token verified for user:', decoded.username);
+    console.log('🔍 JWT user ID:', decoded.id);
     
     try {
       // FIXED: Check ALL possible collections for user progress
       let userProgress = null;
       let completedMissions = [];
       let totalPoints = 0;
+      let userWallet = null;
       
-      // 1. First try userProgress collection (aggregated data)
+      // 1. First try to find the user in the users collection to get the correct Firebase ID
+      let firebaseUserId = null;
+      try {
+        console.log('🔍 Searching for user in users collection...');
+        const usersSnapshot = await firestoreDb
+          .collection('users')
+          .where('username', '==', decoded.username)
+          .get();
+        
+        if (!usersSnapshot.empty) {
+          const userData = usersSnapshot.docs[0].data();
+          firebaseUserId = userData.id;
+          console.log('✅ Found user in users collection with Firebase ID:', firebaseUserId);
+        } else {
+          console.log('⚠️ User not found in users collection, trying with JWT ID');
+          firebaseUserId = decoded.id;
+        }
+      } catch (error) {
+        console.log('⚠️ Error searching users collection:', error.message);
+        firebaseUserId = decoded.id;
+      }
+      
+      console.log('🎯 Using Firebase User ID for queries:', firebaseUserId);
+      
+      // 2. Check userProgress collection (aggregated data)
       try {
         const userProgressSnapshot = await firestoreDb
           .collection('userProgress')
-          .where('userId', '==', decoded.id)
+          .where('userId', '==', firebaseUserId)
           .get();
         
         if (!userProgressSnapshot.empty) {
@@ -644,13 +696,13 @@ exports.getUserStats = async (req, res) => {
         console.log('⚠️ userProgress collection not accessible:', error.message);
       }
       
-      // 2. If no data in userProgress, check user_progress collection (individual records)
+      // 3. If no data in userProgress, check user_progress collection (individual records)
       if (completedMissions.length === 0) {
         try {
           console.log('🔍 Checking user_progress collection for individual mission records...');
           const userProgressIndividualSnapshot = await firestoreDb
             .collection('user_progress')
-            .where('userId', '==', decoded.id)
+            .where('userId', '==', firebaseUserId)
             .get();
           
           if (!userProgressIndividualSnapshot.empty) {
@@ -677,13 +729,13 @@ exports.getUserStats = async (req, res) => {
         }
       }
       
-      // 3. If still no data, check user_stats collection
+      // 4. If still no data, check user_stats collection
       if (completedMissions.length === 0) {
         try {
           console.log('🔍 Checking user_stats collection...');
           const userStatsSnapshot = await firestoreDb
             .collection('user_stats')
-            .where('userId', '==', decoded.id)
+            .where('userId', '==', firebaseUserId)
             .get();
           
           if (!userStatsSnapshot.empty) {
@@ -696,6 +748,24 @@ exports.getUserStats = async (req, res) => {
         } catch (error) {
           console.log('⚠️ user_stats collection not accessible:', error.message);
         }
+      }
+      
+      // 5. Check for user wallet
+      try {
+        console.log('🔍 Checking userWallets collection...');
+        const userWalletSnapshot = await firestoreDb
+          .collection('userWallets')
+          .where('userId', '==', firebaseUserId)
+          .get();
+        
+        if (!userWalletSnapshot.empty) {
+          userWallet = userWalletSnapshot.docs[0].data();
+          console.log('✅ User wallet found:', userWallet.wallet);
+        } else {
+          console.log('⚠️ No wallet found for user');
+        }
+      } catch (error) {
+        console.log('⚠️ userWallets collection not accessible:', error.message);
       }
       
       // Get all missions to calculate stats
@@ -715,11 +785,14 @@ exports.getUserStats = async (req, res) => {
         pendingMissions: allMissions.length - completedMissions.length,
         completedMissionIds: completedMissions, // Array of completed mission IDs
         userProgress: userProgress,
-        allMissions: allMissions
+        userWallet: userWallet,
+        allMissions: allMissions,
+        firebaseUserId: firebaseUserId
       };
       
       console.log('✅ Final user stats calculated:', stats);
       console.log('✅ Completed mission IDs:', completedMissions);
+      console.log('✅ User wallet:', userWallet ? userWallet.wallet : 'None');
       
       return res.json({
         success: true,
