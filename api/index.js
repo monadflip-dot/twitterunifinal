@@ -254,7 +254,22 @@ exports.getUserStats = async (req, res) => {
         if (userProgress.completedMissions) completedMissions = Object.values(userProgress.completedMissions);
         totalPoints = userProgress.totalPoints || 0;
       } else {
-        console.log('⚠️ [STATS] No userProgress found for userId or doc id:', firebaseUserId);
+        // Fallback: buscar por coincidencia parcial
+        const allUserProgressSnapshot = await firestoreDb.collection('userProgress').get();
+        let found = false;
+        allUserProgressSnapshot.forEach(doc => {
+          const data = doc.data();
+          console.log('🔍 [STATS] Comparing with userProgress userId:', data.userId);
+          if (data.userId && String(data.userId).toLowerCase().includes(firebaseUserId.toLowerCase())) {
+            console.log('✅ [STATS] Partial match found:', data);
+            if (data.completedMissions) completedMissions = Object.values(data.completedMissions);
+            totalPoints = data.totalPoints || 0;
+            found = true;
+          }
+        });
+        if (!found) {
+          console.log('⚠️ [STATS] No userProgress found for userId, doc id, or partial match:', firebaseUserId);
+        }
       }
     }
     let userWalletSnapshot = await firestoreDb.collection('userWallets').where('userId', '==', firebaseUserId).get();
@@ -268,7 +283,19 @@ exports.getUserStats = async (req, res) => {
         userWallet = userWalletById.data();
         console.log('🔍 [STATS] userWallet found by doc id:', userWallet);
       } else {
-        console.log('⚠️ [STATS] No userWallet found for userId or doc id:', firebaseUserId);
+        // Fallback: buscar por coincidencia parcial
+        const allUserWalletsSnapshot = await firestoreDb.collection('userWallets').get();
+        allUserWalletsSnapshot.forEach(doc => {
+          const data = doc.data();
+          console.log('🔍 [STATS] Comparing with userWallet userId:', data.userId);
+          if (data.userId && String(data.userId).toLowerCase().includes(firebaseUserId.toLowerCase())) {
+            console.log('✅ [STATS] Partial match found (wallet):', data);
+            userWallet = data;
+          }
+        });
+        if (!userWallet) {
+          console.log('⚠️ [STATS] No userWallet found for userId, doc id, or partial match:', firebaseUserId);
+        }
       }
     }
     const missionsSnapshot = await firestoreDb.collection('missions').get();

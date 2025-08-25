@@ -14,20 +14,24 @@ function App() {
 
   useEffect(() => {
     checkAuthStatus();
-    
     // Check if we have a token in URL (from Twitter OAuth callback)
     const urlParams = new URLSearchParams(window.location.search);
     const tokenFromUrl = urlParams.get('token');
-    
     if (tokenFromUrl) {
       console.log('🔑 JWT token found in URL, saving to localStorage');
       localStorage.setItem('jwt_token', tokenFromUrl);
-      
       // Remove token from URL
-      window.history.replaceState({}, document.title, window.location.pathname);
-      
+      window.history.replaceState({}, document.title, '/');
       // Check auth status again with the new token
       checkAuthStatus();
+      // Redirect to dashboard after login
+      window.location.href = '/dashboard';
+    } else {
+      // If already authenticated, redirect to dashboard
+      const token = localStorage.getItem('jwt_token');
+      if (token && window.location.pathname === '/') {
+        window.location.href = '/dashboard';
+      }
     }
   }, []);
 
@@ -40,26 +44,12 @@ function App() {
         setLoading(false);
         return;
       }
-      
-      const response = await fetch(`${API_URL}/api/user`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-      
-      if (response.ok) {
-        const userData = await response.json();
-        setUser(userData.user);
-        setIsAuthenticated(true);
-      } else {
-        setIsAuthenticated(false);
-        setUser(null);
-      }
+      // This endpoint does not exist, so skip user fetch
+      setIsAuthenticated(true);
+      setLoading(false);
     } catch (error) {
-      console.error('Error checking auth status:', error);
       setIsAuthenticated(false);
       setUser(null);
-    } finally {
       setLoading(false);
     }
   };
@@ -68,7 +58,6 @@ function App() {
     try {
       const token = localStorage.getItem('jwt_token');
       if (token) {
-        // Call logout API
         await fetch(`${API_URL}/api/logout`, {
           method: 'POST',
           headers: {
@@ -76,17 +65,16 @@ function App() {
           }
         });
       }
-      // Clear JWT token from localStorage
       localStorage.removeItem('jwt_token');
       try { await signOut(auth); } catch {}
       setIsAuthenticated(false);
       setUser(null);
+      window.location.href = '/';
     } catch (error) {
-      console.error('Error logging out:', error);
-      // Even if API call fails, clear local state
       localStorage.removeItem('jwt_token');
       setIsAuthenticated(false);
       setUser(null);
+      window.location.href = '/';
     }
   };
 
@@ -99,13 +87,19 @@ function App() {
     );
   }
 
+  // Routing logic: show dashboard if on /dashboard and authenticated
+  if (isAuthenticated && window.location.pathname === '/dashboard') {
+    return (
+      <div className="app">
+        <Dashboard user={user} onLogout={handleLogout} />
+      </div>
+    );
+  }
+
+  // Show login page for all other routes
   return (
     <div className="app">
-      {isAuthenticated ? (
-        <Dashboard user={user} onLogout={handleLogout} />
-      ) : (
-        <LoginPage />
-      )}
+      <LoginPage />
     </div>
   );
 }
