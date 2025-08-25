@@ -4,21 +4,23 @@ function MissionItem({ mission, onComplete, loadingMissionId }) {
   const [started, setStarted] = useState(false);
   const getMissionIcon = (type) => {
     switch (type) {
-      case 'like': return 'fas fa-heart';
-      case 'retweet': return 'fas fa-retweet';
-      case 'comment': return 'fas fa-comment';
-      case 'follow': return 'fas fa-user-plus';
-      default: return 'fas fa-question';
+      case 'social': return 'fas fa-share-alt';
+      case 'engagement': return 'fas fa-heart';
+      case 'community': return 'fas fa-users';
+      case 'promotion': return 'fas fa-bullhorn';
+      case 'referral': return 'fas fa-user-plus';
+      default: return 'fas fa-star';
     }
   };
 
   const getMissionTypeLabel = (type) => {
     switch (type) {
-      case 'like': return 'Like Tweet';
-      case 'retweet': return 'Retweet';
-      case 'comment': return 'Comment';
-      case 'follow': return 'Follow User';
-      default: return 'Unknown';
+      case 'social': return 'Social';
+      case 'engagement': return 'Engagement';
+      case 'community': return 'Community';
+      case 'promotion': return 'Promotion';
+      case 'referral': return 'Referral';
+      default: return 'General';
     }
   };
 
@@ -75,12 +77,15 @@ function MissionItem({ mission, onComplete, loadingMissionId }) {
       
       <div className="mission-content">
         <div className="mission-header">
-          <h3>{getMissionTypeLabel(mission.type)}</h3>
+          <h3>{mission.title}</h3>
           <div className={`status-tag ${getStatusTag(mission.completed).class}`}>
             {getStatusTag(mission.completed).text}
           </div>
         </div>
         
+        <div className="mission-type-badge">
+          <span className="type-label">{getMissionTypeLabel(mission.type)}</span>
+        </div>
 
         
         <div className="mission-description">
