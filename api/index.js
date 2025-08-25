@@ -95,12 +95,14 @@ exports.twitterOAuth2Callback = async (req, res) => {
 // Exchange authorization code for access token
 async function exchangeCodeForToken(code) {
   try {
-    const clientId = process.env.TWITTER_CONSUMER_KEY;
-    const clientSecret = process.env.TWITTER_CONSUMER_SECRET;
+    // Use OAuth 2.0 variables (CLIENT_ID and CLIENT_SECRET) for OAuth 2.0
+    const clientId = process.env.TWITTER_CLIENT_ID || process.env.TWITTER_CONSUMER_KEY;
+    const clientSecret = process.env.TWITTER_CLIENT_SECRET || process.env.TWITTER_CONSUMER_SECRET;
     const redirectUri = 'https://www.pfcwhitelist.xyz/auth/callback';
     
     console.log('🔄 Exchanging code for token...');
     console.log('🔄 Client ID:', clientId ? '✅ Set' : '❌ Missing');
+    console.log('🔄 Using OAuth 2.0 variables:', !!process.env.TWITTER_CLIENT_ID ? '✅ CLIENT_ID/CLIENT_SECRET' : '⚠️ CONSUMER_KEY/CONSUMER_SECRET (fallback)');
     console.log('🔄 Redirect URI:', redirectUri);
     
     const response = await fetch('https://api.twitter.com/2/oauth2/token', {
@@ -171,13 +173,13 @@ exports.twitterOAuth2Authorize = async (req, res) => {
   console.log('🔗 /api/auth/twitter/authorize endpoint called');
   
   try {
-    // Twitter OAuth 2.0 configuration
-    const clientId = process.env.TWITTER_CONSUMER_KEY;
+    // Twitter OAuth 2.0 configuration - Use CLIENT_ID for OAuth 2.0
+    const clientId = process.env.TWITTER_CLIENT_ID || process.env.TWITTER_CONSUMER_KEY;
     const redirectUri = 'https://www.pfcwhitelist.xyz/auth/callback';
     
     if (!clientId) {
-      console.error('❌ TWITTER_CONSUMER_KEY not configured');
-      return res.status(500).json({ error: 'Twitter configuration missing' });
+      console.error('❌ TWITTER_CLIENT_ID not configured');
+      return res.status(500).json({ error: 'Twitter OAuth 2.0 configuration missing' });
     }
     
     // Generate state parameter for security
@@ -194,6 +196,7 @@ exports.twitterOAuth2Authorize = async (req, res) => {
     console.log('🔗 Generated OAuth 2.0 authorization URL');
     console.log('🔗 Client ID:', clientId);
     console.log('🔗 Redirect URI:', redirectUri);
+    console.log('🔗 Using OAuth 2.0 variables:', !!process.env.TWITTER_CLIENT_ID ? '✅ CLIENT_ID' : '⚠️ CONSUMER_KEY (fallback)');
     
     return res.json({
       success: true,
@@ -202,7 +205,8 @@ exports.twitterOAuth2Authorize = async (req, res) => {
       debug: {
         clientId: clientId ? '✅ Set' : '❌ Missing',
         redirectUri: redirectUri,
-        state: state
+        state: state,
+        oauthVersion: process.env.TWITTER_CLIENT_ID ? '2.0' : '1.0a (fallback)'
       }
     });
     
