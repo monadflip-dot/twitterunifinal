@@ -289,6 +289,21 @@ exports.getUser = async (req, res) => {
   }
 };
 
+// --- ENDPOINT: /api/debug/userdata ---
+exports.debugUserData = async (req, res) => {
+  try {
+    const userProgressSnapshot = await firestoreDb.collection('userProgress').get();
+    const userWalletsSnapshot = await firestoreDb.collection('userWallets').get();
+    const userProgress = [];
+    userProgressSnapshot.forEach(doc => userProgress.push({ id: doc.id, ...doc.data() }));
+    const userWallets = [];
+    userWalletsSnapshot.forEach(doc => userWallets.push({ id: doc.id, ...doc.data() }));
+    return res.json({ userProgress, userWallets });
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
+};
+
 // --- HANDLER PRINCIPAL PARA VERCEL ---
 module.exports = async (req, res) => {
   // CORS
@@ -302,6 +317,7 @@ module.exports = async (req, res) => {
   if (req.url === '/api/missions') return exports.getMissions(req, res);
   if (req.url === '/api/user/stats') return exports.getUserStats(req, res);
   if (req.url === '/api/user') return exports.getUser(req, res);
+  if (req.url === '/api/debug/userdata') return exports.debugUserData(req, res);
   // Ping
   if (req.url === '/ping') return res.json({ message: 'pong', status: 'working' });
   // Default
