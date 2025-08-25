@@ -25,6 +25,15 @@ function LoginPage() {
 	useEffect(() => {
 		const unsub = onAuthStateChanged(auth, async (firebaseUser) => {
 			if (!firebaseUser) return;
+			
+			// Verificar si ya tenemos un JWT token válido
+			const existingToken = localStorage.getItem('jwt_token');
+			if (existingToken) {
+				console.log('✅ User already has JWT token, redirecting to dashboard');
+				window.location.replace('/dashboard');
+				return;
+			}
+			
 			try {
 				const idToken = await firebaseUser.getIdToken();
 				const response = await fetch(`${API_URL}/api/auth`, {
@@ -45,8 +54,9 @@ function LoginPage() {
 					const data = await response.json();
 					// Store JWT token in localStorage
 					localStorage.setItem('jwt_token', data.token);
+					console.log('✅ JWT token stored, redirecting to dashboard');
+					window.location.replace('/dashboard');
 				}
-				window.location.replace('/');
 			} catch (e) {
 				console.error('Auth state sync failed:', e?.code, e?.message);
 			}
@@ -89,6 +99,12 @@ function LoginPage() {
 			const data = await response.json();
 			// Store JWT token in localStorage
 			localStorage.setItem('jwt_token', data.token);
+			console.log('✅ Login successful, JWT token stored');
+			// Redirigir al dashboard en lugar de hacer reload
+			window.location.replace('/dashboard');
+		} else {
+			console.error('❌ Auth failed:', response.status);
+			alert('Authentication failed. Please try again.');
 		}
 	};
 
@@ -100,15 +116,20 @@ function LoginPage() {
 					if (k.startsWith('firebase:')) localStorage.removeItem(k);
 				});
 			} catch {}
+			
+			console.log('🚀 Starting Twitter login...');
+			
 			// Popup primero (mejor UX). Si falla, fallback a redirect
 			const result = await signInWithPopup(auth, twitterProvider);
+			console.log('✅ Popup login successful, processing result...');
 			await handleResult(result);
-			window.location.reload();
+			// No hacer reload, handleResult ya redirige
 		} catch (err) {
-			console.error('Popup login failed, falling back to redirect:', err?.code, err?.message);
+			console.error('❌ Popup login failed, falling back to redirect:', err?.code, err?.message);
 			try {
 				await signInWithRedirect(auth, twitterProvider);
 			} catch (e) {
+				console.error('❌ Redirect login also failed:', e);
 				alert('Twitter login failed. Please try again.');
 			}
 		}
