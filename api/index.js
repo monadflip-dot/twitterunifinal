@@ -35,14 +35,26 @@ exports.twitterAuth = async (req, res) => {
       });
     }
     
-    // For OAuth v1, we need to redirect to a different flow
-    // Since Firebase handles the OAuth v1, we'll redirect back to the frontend
-    // and let Firebase handle the Twitter authentication
+    // For OAuth v1, we need to initiate the OAuth flow
+    // This will redirect to Twitter for authorization
+    const { TwitterApi } = require('twitter-api-v2');
     
-    console.log('🔄 OAuth v1 detected, redirecting to frontend for Firebase auth');
+    // Create Twitter client with consumer keys
+    const client = new TwitterApi({
+      appKey: process.env.TWITTER_CONSUMER_KEY,
+      appSecret: process.env.TWITTER_CONSUMER_SECRET,
+    });
     
-    // Redirect to frontend with instruction to use Firebase OAuth v1
-    res.redirect('https://www.pfcwhitelist.xyz?auth_method=firebase_oauth_v1');
+    // Generate OAuth v1 authorization URL
+    const authLink = await client.generateAuthLink(
+      'https://www.pfcwhitelist.xyz/auth/twitter/callback',
+      { scope: ['tweet.read', 'users.read'] }
+    );
+    
+    console.log('🔗 Redirecting to Twitter OAuth v1:', authLink.url);
+    
+    // Redirect to Twitter for authorization
+    res.redirect(authLink.url);
     
   } catch (error) {
     console.error('💥 Error in Twitter OAuth v1:', error);
@@ -50,6 +62,71 @@ exports.twitterAuth = async (req, res) => {
       error: 'Twitter OAuth v1 authentication failed',
       details: error.message
     });
+  }
+};
+
+// Twitter OAuth callback - OAuth v1
+exports.twitterCallback = async (req, res) => {
+  console.log('🔄 Twitter OAuth v1 callback received');
+  
+  try {
+    const { oauth_token, oauth_verifier } = req.query;
+    
+    if (!oauth_token || !oauth_verifier) {
+      console.log('❌ Missing OAuth tokens in callback');
+      return res.status(400).json({
+        error: 'Missing OAuth tokens',
+        details: 'oauth_token or oauth_verifier not provided'
+      });
+    }
+    
+    const { TwitterApi } = require('twitter-api-v2');
+    
+    // Create Twitter client with consumer keys
+    const client = new TwitterApi({
+      appKey: process.env.TWITTER_CONSUMER_KEY,
+      appSecret: process.env.TWITTER_CONSUMER_SECRET,
+    });
+    
+    // Exchange OAuth tokens for access tokens
+    const { accessToken, accessSecret, screenName, userId } = await client.loginWithOAuth1({
+      accessToken: oauth_token,
+      accessSecret: oauth_verifier,
+    });
+    
+    console.log('✅ OAuth v1 tokens obtained for user:', screenName);
+    
+    // Create user object with Twitter credentials
+    const user = {
+      id: userId,
+      username: screenName,
+      displayName: screenName,
+      photo: null,
+      accessToken: accessToken,
+      accessSecret: accessSecret,
+      twitter: {
+        id: userId,
+        screenName: screenName
+      }
+    };
+    
+    // Generate JWT token
+    const token = jwt.sign(user, process.env.SESSION_SECRET || 'your-secret-key', { expiresIn: '24h' });
+    
+    // Set cookie and redirect to frontend
+    res.cookie('jwt', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 24 * 60 * 60 * 1000
+    });
+    
+    // Redirect to frontend with success
+    res.redirect('https://www.pfcwhitelist.xyz?login=success&token=' + token);
+    
+  } catch (error) {
+    console.error('💥 Error in Twitter OAuth v1 callback:', error);
+    res.redirect('https://www.pfcwhitelist.xyz?login=error&message=' + encodeURIComponent(error.message));
   }
 };
 
@@ -170,6 +247,10 @@ module.exports = async (req, res) => {
     
     if (req.url === '/auth/twitter' || req.url === '/auth/twitter/') {
       return await exports.twitterAuth(req, res);
+    }
+    
+    if (req.url === '/auth/twitter/callback' || req.url === '/auth/twitter/callback/') {
+      return await exports.twitterCallback(req, res);
     }
     
     if (req.url === '/api/auth/firebase' || req.url === '/api/auth/firebase/') {
