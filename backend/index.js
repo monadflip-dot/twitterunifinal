@@ -358,6 +358,8 @@ app.get('/auth/twitter', (req, res) => {
   res.redirect(authUrl);
 });
 
+console.log('✅ Twitter OAuth routes registered successfully');
+
 // Helper function to generate PKCE code challenge
 function generateCodeChallenge(verifier) {
   const crypto = require('crypto');
@@ -660,6 +662,9 @@ app.get('/api/debug/missions', (req, res) => {
   });
 });
 
+// 🔐 REGISTER STATIC ROUTES LAST (after all API routes)
+console.log('🌐 Registering static routes...');
+
 // Serve frontend static files
 app.use(express.static(path.join(__dirname, '../frontend/dist')));
 
@@ -668,10 +673,17 @@ app.get('/', (req, res) => {
   res.redirect('https://pfcwhitelist.xyz');
 });
 
-// Catch-all route for SPA - serve frontend index.html
+// Catch-all route for SPA - serve frontend index.html (MUST BE LAST)
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, '../frontend/dist/index.html'));
 });
+
+console.log('✅ Static routes registered successfully');
+console.log('✅ All routes registered in correct order:');
+console.log('   1. Auth routes');
+console.log('   2. Protected routes');
+console.log('   3. Public API routes');
+console.log('   4. Static routes (LAST)');
 
 // Start server
 app.listen(PORT, () => {
