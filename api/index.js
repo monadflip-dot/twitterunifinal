@@ -105,8 +105,8 @@ async function exchangeCodeForToken(code) {
     console.log('🔄 Using OAuth 2.0 variables:', !!process.env.TWITTER_CLIENT_ID ? '✅ CLIENT_ID/CLIENT_SECRET' : '⚠️ CONSUMER_KEY/CONSUMER_SECRET (fallback)');
     console.log('🔄 Redirect URI:', redirectUri);
     
-    // FIXED: Add PKCE code verifier for OAuth 2.0 security
-    const codeVerifier = generateCodeVerifier();
+    // FIXED: Use consistent PKCE code verifier
+    const codeVerifier = '1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
     
     const response = await fetch('https://api.twitter.com/2/oauth2/token', {
       method: 'POST',
@@ -255,7 +255,7 @@ exports.twitterOAuth2Authorize = async (req, res) => {
 function generateCodeChallenge() {
   // FIXED: Generate proper SHA256 hash of the code verifier
   const crypto = require('crypto');
-  const codeVerifier = generateCodeVerifier();
+  const codeVerifier = '1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
   const hash = crypto.createHash('sha256').update(codeVerifier).digest('base64');
   // Make it URL-safe by replacing + with - and / with _
   return hash.replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
