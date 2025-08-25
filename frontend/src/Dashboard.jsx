@@ -52,6 +52,13 @@ function Dashboard({ user, onLogout }) {
         const missionsData = data.missions || [];
         console.log('✅ Missions loaded from backend:', missionsData.length);
         
+        // If no missions exist, initialize them
+        if (missionsData.length === 0) {
+          console.log('⚠️ No missions found, initializing default missions...');
+          await initializeDefaultMissions();
+          return; // This will trigger fetchMissions again
+        }
+        
         setMissions(missionsData);
       } else {
         console.error('❌ Failed to load missions:', response.status);
@@ -60,6 +67,32 @@ function Dashboard({ user, onLogout }) {
     } catch (error) {
       console.error('💥 Error fetching missions:', error);
       setMissions([]);
+    }
+  };
+
+  const initializeDefaultMissions = async () => {
+    try {
+      console.log('🚀 Initializing default missions...');
+      
+      const token = localStorage.getItem('jwt_token');
+      const response = await fetch(`${API_URL}/api/missions/initialize`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        console.log('✅ Missions initialized:', data.message);
+        
+        // Fetch missions again to get the newly created ones
+        await fetchMissions();
+      } else {
+        console.error('❌ Failed to initialize missions:', response.status);
+      }
+    } catch (error) {
+      console.error('💥 Error initializing missions:', error);
     }
   };
 

@@ -613,6 +613,116 @@ exports.getUserStats = async (req, res) => {
   }
 };
 
+// Initialize missions endpoint (creates default missions if none exist)
+exports.initializeMissions = async (req, res) => {
+  console.log('🚀 /api/missions/initialize endpoint called');
+  
+  try {
+    // Get JWT token from Authorization header
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ error: 'No valid authorization header' });
+    }
+    
+    const token = authHeader.substring(7);
+    
+    // Verify JWT token
+    const decoded = jwt.verify(token, process.env.SESSION_SECRET || 'your-secret-key');
+    console.log('✅ JWT token verified for user:', decoded.username);
+    
+    try {
+      // Check if missions already exist
+      const existingMissions = await firestoreDb.collection('missions').get();
+      
+      if (!existingMissions.empty) {
+        console.log('✅ Missions already exist, no need to initialize');
+        return res.json({
+          success: true,
+          message: 'Missions already exist',
+          count: existingMissions.size
+        });
+      }
+      
+      // Create default missions
+      const defaultMissions = [
+        {
+          id: '1',
+          title: 'Follow on Twitter',
+          description: 'Follow our official Twitter account @PFCWhitelist',
+          points: 50,
+          completed: false,
+          type: 'social',
+          requirements: ['Follow Twitter account'],
+          createdAt: new Date(),
+          updatedAt: new Date()
+        },
+        {
+          id: '2',
+          title: 'Retweet Announcement',
+          description: 'Retweet our latest announcement about the whitelist',
+          points: 100,
+          completed: false,
+          type: 'social',
+          requirements: ['Retweet announcement'],
+          createdAt: new Date(),
+          updatedAt: new Date()
+        },
+        {
+          id: '3',
+          title: 'Join Discord Community',
+          description: 'Join our Discord community to stay updated',
+          points: 75,
+          completed: false,
+          type: 'community',
+          requirements: ['Join Discord server'],
+          createdAt: new Date(),
+          updatedAt: new Date()
+        },
+        {
+          id: '4',
+          title: 'Share Project',
+          description: 'Share our project on your social media',
+          points: 125,
+          completed: false,
+          type: 'promotion',
+          requirements: ['Share on social media'],
+          createdAt: new Date(),
+          updatedAt: new Date()
+        }
+      ];
+      
+      // Add missions to Firebase
+      const batch = firestoreDb.batch();
+      
+      defaultMissions.forEach(mission => {
+        const missionRef = firestoreDb.collection('missions').doc(mission.id);
+        batch.set(missionRef, mission);
+      });
+      
+      await batch.commit();
+      console.log('✅ Default missions created in Firebase');
+      
+      return res.json({
+        success: true,
+        message: 'Default missions initialized successfully',
+        missions: defaultMissions,
+        count: defaultMissions.length
+      });
+      
+    } catch (firebaseError) {
+      console.error('❌ Error initializing missions in Firebase:', firebaseError);
+      return res.status(500).json({ 
+        error: 'Failed to initialize missions',
+        details: firebaseError.message
+      });
+    }
+    
+  } catch (err) {
+    console.error('💥 Error in initialize missions:', err);
+    return res.status(401).json({ error: 'Invalid or expired token' });
+  }
+};
+
 // Main handler for Vercel
 module.exports = async (req, res) => {
   console.log('🚀 Main handler called');
@@ -671,6 +781,12 @@ module.exports = async (req, res) => {
     if (req.url === '/api/missions' || req.url === '/api/missions/') {
       if (req.method === 'GET') {
         return await exports.getMissions(req, res);
+      }
+    }
+
+    if (req.url === '/api/missions/initialize' || req.url === '/api/missions/initialize/') {
+      if (req.method === 'POST') {
+        return await exports.initializeMissions(req, res);
       }
     }
 
