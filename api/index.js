@@ -444,6 +444,175 @@ exports.logoutAlt = async (req, res) => {
   }
 };
 
+// Missions endpoint
+exports.getMissions = async (req, res) => {
+  console.log('🎯 /api/missions endpoint called');
+  
+  try {
+    // Get JWT token from Authorization header
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ error: 'No valid authorization header' });
+    }
+    
+    const token = authHeader.substring(7);
+    
+    // Verify JWT token
+    const decoded = jwt.verify(token, process.env.SESSION_SECRET || 'your-secret-key');
+    console.log('✅ JWT token verified for user:', decoded.username);
+    
+    // Get missions from Firebase
+    try {
+      const missionsSnapshot = await firestoreDb.collection('missions').get();
+      const missions = [];
+      
+      missionsSnapshot.forEach(doc => {
+        const missionData = doc.data();
+        missions.push({
+          id: doc.id,
+          title: missionData.title || 'Mission',
+          description: missionData.description || 'Complete this mission',
+          points: missionData.points || 10,
+          completed: missionData.completed || false,
+          type: missionData.type || 'general',
+          requirements: missionData.requirements || [],
+          ...missionData
+        });
+      });
+      
+      console.log('✅ Missions loaded from Firebase:', missions.length);
+      
+      return res.json({
+        success: true,
+        missions: missions,
+        count: missions.length
+      });
+      
+    } catch (firebaseError) {
+      console.error('❌ Error loading missions from Firebase:', firebaseError);
+      
+      // Return fallback missions if Firebase fails
+      const fallbackMissions = [
+        {
+          id: '1',
+          title: 'Follow on Twitter',
+          description: 'Follow our official Twitter account',
+          points: 50,
+          completed: false,
+          type: 'social'
+        },
+        {
+          id: '2',
+          title: 'Retweet Announcement',
+          description: 'Retweet our latest announcement',
+          points: 100,
+          completed: false,
+          type: 'social'
+        },
+        {
+          id: '3',
+          title: 'Join Discord',
+          description: 'Join our Discord community',
+          points: 75,
+          completed: false,
+          type: 'community'
+        }
+      ];
+      
+      return res.json({
+        success: true,
+        missions: fallbackMissions,
+        count: fallbackMissions.length,
+        note: 'Using fallback missions due to Firebase connection issue'
+      });
+    }
+    
+  } catch (err) {
+    console.error('💥 Error in /api/missions:', err);
+    return res.status(401).json({ error: 'Invalid or expired token' });
+  }
+};
+
+// User stats endpoint
+exports.getUserStats = async (req, res) => {
+  console.log('📊 /api/user/stats endpoint called');
+  
+  try {
+    // Get JWT token from Authorization header
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ error: 'No valid authorization header' });
+    }
+    
+    const token = authHeader.substring(7);
+    
+    // Verify JWT token
+    const decoded = jwt.verify(token, process.env.SESSION_SECRET || 'your-secret-key');
+    console.log('✅ JWT token verified for user:', decoded.username);
+    
+    try {
+      // Get user's mission completions from Firebase
+      const userMissionsSnapshot = await firestoreDb
+        .collection('userMissions')
+        .where('userId', '==', decoded.id)
+        .get();
+      
+      const userMissions = [];
+      userMissionsSnapshot.forEach(doc => {
+        userMissions.push(doc.data());
+      });
+      
+      // Get all missions to calculate stats
+      const missionsSnapshot = await firestoreDb.collection('missions').get();
+      const allMissions = [];
+      missionsSnapshot.forEach(doc => {
+        allMissions.push(doc.data());
+      });
+      
+      // Calculate statistics
+      const completedMissions = userMissions.filter(um => um.completed).length;
+      const totalPoints = userMissions
+        .filter(um => um.completed)
+        .reduce((sum, um) => sum + (um.points || 0), 0);
+      
+      const stats = {
+        totalPoints: totalPoints,
+        completedMissions: completedMissions,
+        totalMissions: allMissions.length,
+        pendingMissions: allMissions.length - completedMissions,
+        userMissions: userMissions,
+        allMissions: allMissions
+      };
+      
+      console.log('✅ User stats loaded:', stats);
+      
+      return res.json({
+        success: true,
+        stats: stats
+      });
+      
+    } catch (firebaseError) {
+      console.error('❌ Error loading user stats from Firebase:', firebaseError);
+      
+      // Return fallback stats if Firebase fails
+      return res.json({
+        success: true,
+        stats: {
+          totalPoints: 0,
+          completedMissions: 0,
+          totalMissions: 3,
+          pendingMissions: 3,
+          note: 'Using fallback stats due to Firebase connection issue'
+        }
+      });
+    }
+    
+  } catch (err) {
+    console.error('💥 Error in /api/user/stats:', err);
+    return res.status(401).json({ error: 'Invalid or expired token' });
+  }
+};
+
 // Main handler for Vercel
 module.exports = async (req, res) => {
   console.log('🚀 Main handler called');
@@ -496,6 +665,18 @@ module.exports = async (req, res) => {
     if (req.url === '/api/user' || req.url === '/api/user/') {
       if (req.method === 'GET') {
         return await exports.getUser(req, res);
+      }
+    }
+    
+    if (req.url === '/api/missions' || req.url === '/api/missions/') {
+      if (req.method === 'GET') {
+        return await exports.getMissions(req, res);
+      }
+    }
+
+    if (req.url === '/api/user/stats' || req.url === '/api/user/stats/') {
+      if (req.method === 'GET') {
+        return await exports.getUserStats(req, res);
       }
     }
     

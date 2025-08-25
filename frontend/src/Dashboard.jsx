@@ -3,7 +3,8 @@ import MissionList from './MissionList';
 import WalletSection from './WalletSection';
 import favicon from '../images/favicon.png';
 
-const API_URL = process.env.REACT_APP_API_URL || '';
+// FIXED: Use hardcoded production URL instead of undefined environment variable
+const API_URL = 'https://www.pfcwhitelist.xyz';
 
 function Dashboard({ user, onLogout }) {
   const [missions, setMissions] = useState([]);
@@ -26,6 +27,7 @@ function Dashboard({ user, onLogout }) {
 
   useEffect(() => {
     fetchMissions();
+    fetchUserStats(); // Add this line to fetch user stats
   }, []);
 
   const fetchMissions = async () => {
@@ -36,7 +38,7 @@ function Dashboard({ user, onLogout }) {
       const token = localStorage.getItem('jwt_token');
       console.log('🔍 Token found:', token ? 'YES' : 'NO');
       
-      // Intentar obtener misiones del endpoint principal
+      // Get missions from backend
       const response = await fetch(`${API_URL}/api/missions`, {
         headers: {
           'Authorization': `Bearer ${token}`
@@ -48,50 +50,50 @@ function Dashboard({ user, onLogout }) {
       if (response.ok) {
         const data = await response.json();
         const missionsData = data.missions || [];
-        console.log('✅ Missions loaded from main endpoint:', missionsData.length);
+        console.log('✅ Missions loaded from backend:', missionsData.length);
         
         setMissions(missionsData);
-        
-        // Calcular estadísticas
-        const completed = missionsData.filter(m => m.completed).length;
-        setStats({
-          totalPoints: missionsData.filter(m => m.completed).reduce((sum, m) => sum + m.points, 0),
-          completedMissions: completed,
-          totalMissions: missionsData.length,
-          pendingMissions: missionsData.length - completed
-        });
       } else {
-        console.log('⚠️ Main endpoint failed, trying fallback...');
-        
-        // Intentar endpoint de fallback
-        const fallbackResponse = await fetch(`${API_URL}/api/test/missions`);
-        console.log('🔍 Fallback response status:', fallbackResponse.status);
-        
-        if (fallbackResponse.ok) {
-          const data = await fallbackResponse.json();
-          const missionsData = data.missions || [];
-          console.log('✅ Missions loaded from fallback endpoint:', missionsData.length);
-          
-          setMissions(missionsData);
-          
-          // Calcular estadísticas
-          const completed = missionsData.filter(m => m.completed).length;
-          setStats({
-            totalPoints: missionsData.filter(m => m.completed).reduce((sum, m) => sum + m.points, 0),
-            completedMissions: completed,
-            totalMissions: missionsData.length,
-            pendingMissions: missionsData.length - completed
-          });
-        } else {
-          console.error('❌ Both endpoints failed');
-          console.error('❌ Main endpoint status:', response.status);
-          console.error('❌ Fallback endpoint status:', fallbackResponse.status);
-          setMissions([]);
-        }
+        console.error('❌ Failed to load missions:', response.status);
+        setMissions([]);
       }
     } catch (error) {
       console.error('💥 Error fetching missions:', error);
       setMissions([]);
+    }
+  };
+
+  const fetchUserStats = async () => {
+    try {
+      console.log('📊 Fetching user stats...');
+      
+      const token = localStorage.getItem('jwt_token');
+      if (!token) {
+        console.log('❌ No token found for stats');
+        return;
+      }
+      
+      const response = await fetch(`${API_URL}/api/user/stats`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        console.log('✅ User stats loaded:', data.stats);
+        
+        setStats({
+          totalPoints: data.stats.totalPoints || 0,
+          completedMissions: data.stats.completedMissions || 0,
+          totalMissions: data.stats.totalMissions || 0,
+          pendingMissions: data.stats.pendingMissions || 0
+        });
+      } else {
+        console.error('❌ Failed to load user stats:', response.status);
+      }
+    } catch (error) {
+      console.error('💥 Error fetching user stats:', error);
     }
   };
 
