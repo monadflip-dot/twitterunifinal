@@ -1,3 +1,4 @@
+// Firebase Admin SDK Configuration for Vercel API Routes
 import { initializeApp, getApps, cert } from 'firebase-admin/app';
 import { getFirestore } from 'firebase-admin/firestore';
 
