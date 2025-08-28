@@ -13,7 +13,6 @@ function Dashboard({ user, onLogout }) {
   });
   const [loading, setLoading] = useState(true);
   const [loadingMissionId, setLoadingMissionId] = useState(null);
-  const [backendStatus, setBackendStatus] = useState('checking');
 
   // Debug log para ver qué usuario llega
   useEffect(() => {
@@ -36,7 +35,6 @@ function Dashboard({ user, onLogout }) {
       
       if (!token) {
         console.log('❌ No JWT token found, using fallback');
-        setBackendStatus('offline');
         setLoading(false);
         return;
       }
@@ -67,14 +65,11 @@ function Dashboard({ user, onLogout }) {
           pendingMissions: missionsData.length - completed
         });
         
-        setBackendStatus('online');
       } else {
         console.error('❌ API failed:', response.status);
-        setBackendStatus('offline');
       }
     } catch (error) {
       console.error('💥 Error fetching missions:', error);
-      setBackendStatus('offline');
     } finally {
       setLoading(false);
     }
@@ -147,24 +142,6 @@ function Dashboard({ user, onLogout }) {
         <div className="dashboard-panel">
           <div style={{ display: 'flex', justifyContent: 'center', marginTop: '30px' }}>
             <img src={favicon} alt="Logo" style={{ width: '150px', height: '150px' }} />
-          </div>
-          
-          {/* Backend Status Indicator */}
-          <div style={{ 
-            background: backendStatus === 'online' ? 'rgba(76, 175, 80, 0.1)' : 'rgba(255, 152, 0, 0.1)', 
-            border: `1px solid ${backendStatus === 'online' ? '#4caf50' : '#ff9800'}`, 
-            borderRadius: '8px', 
-            padding: '10px', 
-            margin: '20px', 
-            textAlign: 'center',
-            color: backendStatus === 'online' ? '#2e7d32' : '#e65100'
-          }}>
-            <i className={`fas fa-${backendStatus === 'online' ? 'wifi' : 'exclamation-triangle'}`}></i>
-            <strong> {backendStatus === 'online' ? 'Online Mode:' : 'Offline Mode:'}</strong> 
-            {backendStatus === 'online' 
-              ? ' Connected to Firebase database' 
-              : ' Using cached data - check environment variables'
-            }
           </div>
           
           <div className="user-section">
