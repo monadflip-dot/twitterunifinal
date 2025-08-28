@@ -1,0 +1,10 @@
+[33m233e932[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m)[m HEAD@{0}: reset: moving to 233e932
+[33m6ec5baf[m[33m ([m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m HEAD@{1}: commit: Implement graceful backend fallback: App continues working with Firebase when backend APIs fail
+[33mb53f0f5[m HEAD@{2}: commit: Fix infinite refresh loop: Replace window.location calls with callback-based authentication flow
+[33mec1c263[m HEAD@{3}: reset: moving to ec1c263
+[33m3e98000[m HEAD@{4}: commit: Fix infinite refresh loop: Remove backend API dependencies and use Firebase-only authentication
+[33mec1c263[m HEAD@{5}: reset: moving to ec1c263
+[33me16d6a2[m HEAD@{6}: commit: Fix: Restore Firestore connection in Dashboard - Connect directly to database to fetch missions and user progress, fixing data loss issue
+[33meacc37c[m HEAD@{7}: commit: Fix: Complete authentication flow cleanup - Fix logout to clear all tokens, improve OAuth error handling, and ensure clean state for login
+[33m073607b[m HEAD@{8}: commit: Fix: Correct route order in vercel.json - Ensure specific routes are processed before catch-all
+[33m8bcda43[m HEAD@{9}: commit: Fix: Prevent automatic redirect to dashboard with invalid JWT tokens - Add token validation before redirect

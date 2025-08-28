@@ -3,9 +3,7 @@ import LoginPage from './LoginPage';
 import Dashboard from './Dashboard';
 import './App.css';
 import { auth } from './firebase';
-import { signOut } from 'firebase/auth';
-
-const API_URL = process.env.REACT_APP_API_URL || '';
+import { signOut, onAuthStateChanged } from 'firebase/auth';
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -13,63 +11,39 @@ function App() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    checkAuthStatus();
-  }, []);
-
-  const checkAuthStatus = async () => {
-    try {
-      const token = localStorage.getItem('jwt_token');
-      if (!token) {
-        setIsAuthenticated(false);
-        setUser(null);
-        setLoading(false);
-        return;
-      }
-      
-      const response = await fetch(`${API_URL}/api/user`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-      
-      if (response.ok) {
-        const userData = await response.json();
-        setUser(userData.user);
+    // Listen to Firebase auth state changes
+    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+      if (firebaseUser) {
+        // User is signed in
+        const userData = {
+          uid: firebaseUser.uid,
+          displayName: firebaseUser.displayName || 'User',
+          photo: firebaseUser.photoURL,
+          username: firebaseUser.displayName || 'user',
+          email: firebaseUser.email
+        };
+        setUser(userData);
         setIsAuthenticated(true);
       } else {
-        setIsAuthenticated(false);
+        // User is signed out
         setUser(null);
+        setIsAuthenticated(false);
       }
-    } catch (error) {
-      console.error('Error checking auth status:', error);
-      setIsAuthenticated(false);
-      setUser(null);
-    } finally {
       setLoading(false);
-    }
-  };
+    });
+
+    // Cleanup subscription
+    return () => unsubscribe();
+  }, []);
 
   const handleLogout = async () => {
     try {
-      const token = localStorage.getItem('jwt_token');
-      if (token) {
-        // Call logout API
-        await fetch(`${API_URL}/api/logout`, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        });
-      }
-      // Clear JWT token from localStorage
-      localStorage.removeItem('jwt_token');
-      try { await signOut(auth); } catch {}
+      await signOut(auth);
       setIsAuthenticated(false);
       setUser(null);
     } catch (error) {
       console.error('Error logging out:', error);
-      // Even if API call fails, clear local state
-      localStorage.removeItem('jwt_token');
+      // Even if logout fails, clear local state
       setIsAuthenticated(false);
       setUser(null);
     }

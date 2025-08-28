@@ -3,15 +3,57 @@ import MissionList from './MissionList';
 import WalletSection from './WalletSection';
 import favicon from '../images/favicon.png';
 
-const API_URL = process.env.REACT_APP_API_URL || '';
+// Static missions data - no backend needed
+const STATIC_MISSIONS = [
+  {
+    id: 1,
+    title: "Follow @PenguinFishingClub",
+    description: "Follow our official Twitter account to stay updated with the latest news and announcements.",
+    points: 50,
+    completed: false,
+    type: "follow"
+  },
+  {
+    id: 2,
+    title: "Retweet Announcement",
+    description: "Retweet our latest announcement about the whitelist opening.",
+    points: 75,
+    completed: false,
+    type: "retweet"
+  },
+  {
+    id: 3,
+    title: "Like 3 Posts",
+    description: "Like at least 3 of our recent posts to show your support.",
+    points: 25,
+    completed: false,
+    type: "like"
+  },
+  {
+    id: 4,
+    title: "Share Your Excitement",
+    description: "Tweet about how excited you are for the Penguin Fishing Club mint.",
+    points: 100,
+    completed: false,
+    type: "tweet"
+  },
+  {
+    id: 5,
+    title: "Join Discord",
+    description: "Join our Discord community and introduce yourself.",
+    points: 50,
+    completed: false,
+    type: "discord"
+  }
+];
 
 function Dashboard({ user, onLogout }) {
-  const [missions, setMissions] = useState([]);
+  const [missions, setMissions] = useState(STATIC_MISSIONS);
   const [stats, setStats] = useState({
     totalPoints: 0,
     completedMissions: 0,
-    totalMissions: 0,
-    pendingMissions: 0
+    totalMissions: STATIC_MISSIONS.length,
+    pendingMissions: STATIC_MISSIONS.length
   });
   const [loading, setLoading] = useState(false);
   const [loadingMissionId, setLoadingMissionId] = useState(null);
@@ -22,76 +64,34 @@ function Dashboard({ user, onLogout }) {
     console.log('🔍 User photo:', user?.photo);
     console.log('🔍 User displayName:', user?.displayName);
     console.log('🔍 User username:', user?.username);
+    
+    // Load user progress from localStorage
+    loadUserProgress();
   }, [user]);
 
-  useEffect(() => {
-    fetchMissions();
-  }, []);
-
-  const fetchMissions = async () => {
+  const loadUserProgress = () => {
     try {
-      console.log('🔍 Starting to fetch missions...');
-      console.log('🔍 API_URL:', API_URL);
-      
-      const token = localStorage.getItem('jwt_token');
-      console.log('🔍 Token found:', token ? 'YES' : 'NO');
-      
-      // Intentar obtener misiones del endpoint principal
-      const response = await fetch(`${API_URL}/api/missions`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-      
-      console.log('🔍 Response status:', response.status);
-      
-      if (response.ok) {
-        const data = await response.json();
-        const missionsData = data.missions || [];
-        console.log('✅ Missions loaded from main endpoint:', missionsData.length);
-        
-        setMissions(missionsData);
-        
-        // Calcular estadísticas
-        const completed = missionsData.filter(m => m.completed).length;
-        setStats({
-          totalPoints: missionsData.filter(m => m.completed).reduce((sum, m) => sum + m.points, 0),
-          completedMissions: completed,
-          totalMissions: missionsData.length,
-          pendingMissions: missionsData.length - completed
-        });
-      } else {
-        console.log('⚠️ Main endpoint failed, trying fallback...');
-        
-        // Intentar endpoint de fallback
-        const fallbackResponse = await fetch(`${API_URL}/api/test/missions`);
-        console.log('🔍 Fallback response status:', fallbackResponse.status);
-        
-        if (fallbackResponse.ok) {
-          const data = await fallbackResponse.json();
-          const missionsData = data.missions || [];
-          console.log('✅ Missions loaded from fallback endpoint:', missionsData.length);
-          
-          setMissions(missionsData);
-          
-          // Calcular estadísticas
-          const completed = missionsData.filter(m => m.completed).length;
-          setStats({
-            totalPoints: missionsData.filter(m => m.completed).reduce((sum, m) => sum + m.points, 0),
-            completedMissions: completed,
-            totalMissions: missionsData.length,
-            pendingMissions: missionsData.length - completed
-          });
-        } else {
-          console.error('❌ Both endpoints failed');
-          console.error('❌ Main endpoint status:', response.status);
-          console.error('❌ Fallback endpoint status:', fallbackResponse.status);
-          setMissions([]);
-        }
+      const savedProgress = localStorage.getItem(`user_progress_${user?.uid}`);
+      if (savedProgress) {
+        const progress = JSON.parse(savedProgress);
+        setMissions(progress.missions);
+        setStats(progress.stats);
       }
     } catch (error) {
-      console.error('💥 Error fetching missions:', error);
-      setMissions([]);
+      console.log('No saved progress found, using default missions');
+    }
+  };
+
+  const saveUserProgress = (newMissions, newStats) => {
+    try {
+      const progress = {
+        missions: newMissions,
+        stats: newStats,
+        lastUpdated: Date.now()
+      };
+      localStorage.setItem(`user_progress_${user?.uid}`, JSON.stringify(progress));
+    } catch (error) {
+      console.error('Error saving progress:', error);
     }
   };
 
@@ -101,68 +101,40 @@ function Dashboard({ user, onLogout }) {
     setLoadingMissionId(missionId);
     
     try {
-      // Simular delay de lectura/verificación
-      await new Promise(resolve => setTimeout(resolve, 5000));
+      // Simulate delay for mission verification
+      await new Promise(resolve => setTimeout(resolve, 2000));
       
-      const token = localStorage.getItem('jwt_token');
-      const response = await fetch(`${API_URL}/api/missions/${missionId}/complete`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        console.log('Respuesta de la API:', data); // Debug log
+      // Find and complete the mission
+      const mission = missions.find(m => m.id === missionId);
+      if (mission && !mission.completed) {
+        // Mark mission as completed
+        const newMissions = missions.map(m => 
+          m.id === missionId ? { ...m, completed: true } : m
+        );
         
-        if (data.success) {
-          // Misión completada exitosamente
-          const mission = missions.find(m => m.id === missionId);
-          console.log('Misión encontrada:', mission); // Debug log
-          console.log('Puntos de la misión:', mission?.points); // Debug log
-          console.log('Puntos de la respuesta:', data.points); // Debug log
-          
-          setMissions(prev => {
-            const newMissions = prev.map(m => m.id === missionId ? { ...m, completed: true } : m);
-            console.log('Misiones antes de actualizar:', prev); // Debug log
-            console.log('Misiones después de actualizar:', newMissions); // Debug log
-            return newMissions;
-          });
-          
-          // Actualizar estadísticas usando los puntos de la misión local
-          const pointsToAdd = mission?.points || 0;
-          console.log('Puntos a agregar:', pointsToAdd); // Debug log
-          console.log('Estadísticas antes de actualizar:', stats); // Debug log
-          
-          setStats(prev => {
-            const newStats = {
-              ...prev,
-              totalPoints: prev.totalPoints + pointsToAdd,
-              completedMissions: prev.completedMissions + 1,
-              pendingMissions: Math.max(prev.pendingMissions - 1, 0)
-            };
-            console.log('Nuevas estadísticas:', newStats); // Debug log
-            return newStats;
-          });
-        } else {
-          alert('Could not verify the mission. Make sure you have completed the action on Twitter before clicking "Complete".');
-        }
-      } else if (response.status === 429) {
-        const errorData = await response.json();
-        alert(`Rate limit exceeded: ${errorData.error}\n\nWait a few minutes before trying to verify the mission.`);
-      } else if (response.status === 403) {
-        const errorData = await response.json();
-        alert(`Permission error: ${errorData.error}\n\nVerify your Twitter account and granted permissions.`);
-      } else if (response.status === 500) {
-        const errorData = await response.json();
-        alert(`Server error: ${errorData.error}\n\nDetails: ${errorData.details || 'Unknown error'}`);
+        // Update statistics
+        const pointsToAdd = mission.points;
+        const newStats = {
+          totalPoints: stats.totalPoints + pointsToAdd,
+          completedMissions: stats.completedMissions + 1,
+          totalMissions: stats.totalMissions,
+          pendingMissions: Math.max(stats.pendingMissions - 1, 0)
+        };
+        
+        // Update state
+        setMissions(newMissions);
+        setStats(newStats);
+        
+        // Save to localStorage
+        saveUserProgress(newMissions, newStats);
+        
+        alert(`Mission completed! You earned ${pointsToAdd} points.`);
       } else {
-        alert('Error verifying the mission. Try again.');
+        alert('Mission already completed or not found.');
       }
     } catch (error) {
       console.error('Error completing mission:', error);
-      alert('Connection error. Try again.');
+      alert('Error completing mission. Try again.');
     } finally {
       setLoadingMissionId(null);
     }
@@ -174,6 +146,20 @@ function Dashboard({ user, onLogout }) {
         <div className="dashboard-panel">
           <div style={{ display: 'flex', justifyContent: 'center', marginTop: '30px' }}>
             <img src={favicon} alt="Logo" style={{ width: '150px', height: '150px' }} />
+          </div>
+          
+          {/* Offline Mode Indicator */}
+          <div style={{ 
+            background: 'rgba(76, 175, 80, 0.1)', 
+            border: '1px solid #4caf50', 
+            borderRadius: '8px', 
+            padding: '10px', 
+            margin: '20px', 
+            textAlign: 'center',
+            color: '#2e7d32'
+          }}>
+            <i className="fas fa-wifi"></i>
+            <strong> Online Mode:</strong> Using local storage for missions and progress.
           </div>
           
           <div className="user-section">

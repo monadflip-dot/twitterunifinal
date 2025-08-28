@@ -3,8 +3,6 @@ import favicon from '../images/favicon.png';
 import { auth, twitterProvider } from './firebase';
 import { getAdditionalUserInfo, TwitterAuthProvider, signInWithRedirect, getRedirectResult, onAuthStateChanged, signInWithPopup } from 'firebase/auth';
 
-const API_URL = process.env.REACT_APP_API_URL || '';
-
 function LoginPage() {
 	// Procesar resultado de redirect si existe
 	useEffect(() => {
@@ -12,101 +10,14 @@ function LoginPage() {
 			try {
 				const result = await getRedirectResult(auth);
 				if (result) {
-					await handleResult(result);
-					window.location.reload();
+					console.log('✅ Twitter login successful via redirect');
+					// No need to do anything else, Firebase auth state will handle the rest
 				}
 			} catch (e) {
 				console.error('Firebase Twitter redirect failed:', e?.code, e?.message);
 			}
 		})();
 	}, []);
-
-	// Fallback: si ya hay usuario autenticado en Firebase pero no se procesó el resultado
-	useEffect(() => {
-		const unsub = onAuthStateChanged(auth, async (firebaseUser) => {
-			if (!firebaseUser) return;
-			
-			// Verificar si ya tenemos un JWT token válido
-			const existingToken = localStorage.getItem('jwt_token');
-			if (existingToken) {
-				console.log('✅ User already has JWT token, redirecting to dashboard');
-				window.location.replace('/dashboard');
-				return;
-			}
-			
-			try {
-				const idToken = await firebaseUser.getIdToken();
-				const response = await fetch(`${API_URL}/api/auth`, {
-					method: 'POST',
-					headers: { 'Content-Type': 'application/json' },
-					body: JSON.stringify({
-						idToken,
-						profile: {
-							uid: firebaseUser.uid,
-							displayName: firebaseUser.displayName,
-							photoURL: firebaseUser.photoURL,
-							email: firebaseUser.email
-						}
-					})
-				});
-				
-				if (response.ok) {
-					const data = await response.json();
-					// Store JWT token in localStorage
-					localStorage.setItem('jwt_token', data.token);
-					console.log('✅ JWT token stored, redirecting to dashboard');
-					window.location.replace('/dashboard');
-				}
-			} catch (e) {
-				console.error('Auth state sync failed:', e?.code, e?.message);
-			}
-		});
-		return () => unsub();
-	}, []);
-
-	const handleResult = async (result) => {
-		const firebaseUser = result.user;
-		let accessToken = null;
-		let accessSecret = null;
-		try {
-			const cred = TwitterAuthProvider.credentialFromResult(result);
-			accessToken = cred?.accessToken || null;
-			accessSecret = cred?.secret || null;
-		} catch (e) {
-			console.warn('No Twitter credential extracted:', e?.message || e);
-		}
-		const info = getAdditionalUserInfo(result);
-		const screenName = info?.username || firebaseUser?.reloadUserInfo?.screenName || firebaseUser?.displayName || 'user';
-		const idToken = await firebaseUser.getIdToken();
-		const response = await fetch(`${API_URL}/api/auth`, {
-			method: 'POST',
-			headers: { 'Content-Type': 'application/json' },
-			body: JSON.stringify({
-				idToken,
-				twitterAccessToken: accessToken,
-				twitterAccessSecret: accessSecret,
-				profile: {
-					uid: firebaseUser.uid,
-					displayName: firebaseUser.displayName,
-					photoURL: firebaseUser.photoURL,
-					email: firebaseUser.email,
-					screenName
-				}
-			})
-		});
-		
-		if (response.ok) {
-			const data = await response.json();
-			// Store JWT token in localStorage
-			localStorage.setItem('jwt_token', data.token);
-			console.log('✅ Login successful, JWT token stored');
-			// Redirigir al dashboard en lugar de hacer reload
-			window.location.replace('/dashboard');
-		} else {
-			console.error('❌ Auth failed:', response.status);
-			alert('Authentication failed. Please try again.');
-		}
-	};
 
 	const handleTwitterLogin = async () => {
 		try {
@@ -121,9 +32,8 @@ function LoginPage() {
 			
 			// Popup primero (mejor UX). Si falla, fallback a redirect
 			const result = await signInWithPopup(auth, twitterProvider);
-			console.log('✅ Popup login successful, processing result...');
-			await handleResult(result);
-			// No hacer reload, handleResult ya redirige
+			console.log('✅ Popup login successful');
+			// No need to do anything else, Firebase auth state will handle the rest
 		} catch (err) {
 			console.error('❌ Popup login failed, falling back to redirect:', err?.code, err?.message);
 			try {
