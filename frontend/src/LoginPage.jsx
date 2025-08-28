@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import favicon from '../images/favicon.png';
 import { auth, twitterProvider } from './firebase';
-import { getAdditionalUserInfo, TwitterAuthProvider, signInWithRedirect, getRedirectResult, onAuthStateChanged, signInWithPopup } from 'firebase/auth';
+import { getAdditionalUserInfo, TwitterAuthProvider, signInWithRedirect, getRedirectResult, signInWithPopup } from 'firebase/auth';
 
 function LoginPage() {
 	// Procesar resultado de redirect si existe
@@ -11,13 +11,74 @@ function LoginPage() {
 				const result = await getRedirectResult(auth);
 				if (result) {
 					console.log('✅ Twitter login successful via redirect');
-					// No need to do anything else, Firebase auth state will handle the rest
+					await handleResult(result);
 				}
 			} catch (e) {
 				console.error('Firebase Twitter redirect failed:', e?.code, e?.message);
 			}
 		})();
 	}, []);
+
+	const handleResult = async (result) => {
+		try {
+			const firebaseUser = result.user;
+			let accessToken = null;
+			let accessSecret = null;
+			
+			try {
+				const cred = TwitterAuthProvider.credentialFromResult(result);
+				accessToken = cred?.accessToken || null;
+				accessSecret = cred?.secret || null;
+			} catch (e) {
+				console.warn('No Twitter credential extracted:', e?.message || e);
+			}
+			
+			const info = getAdditionalUserInfo(result);
+			const screenName = info?.username || firebaseUser?.reloadUserInfo?.screenName || firebaseUser?.displayName || 'user';
+			
+			// Get Firebase ID token
+			const idToken = await firebaseUser.getIdToken();
+			
+			console.log('🔑 Exchanging Firebase token for JWT...');
+			
+			// Call our auth API to get JWT token
+			const response = await fetch('/api/auth', {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json'
+				},
+				body: JSON.stringify({
+					idToken,
+					twitterAccessToken: accessToken,
+					twitterAccessSecret: accessSecret,
+					profile: {
+						uid: firebaseUser.uid,
+						displayName: firebaseUser.displayName,
+						photoURL: firebaseUser.photoURL,
+						email: firebaseUser.email,
+						screenName
+					}
+				})
+			});
+			
+			if (response.ok) {
+				const data = await response.json();
+				// Store JWT token in localStorage
+				localStorage.setItem('jwt_token', data.token);
+				console.log('✅ JWT token stored, authentication successful');
+				
+				// Reload the page to trigger App.jsx auth check
+				window.location.reload();
+			} else {
+				const errorData = await response.json();
+				console.error('❌ Auth API failed:', response.status, errorData);
+				alert(`Authentication failed: ${errorData.error || 'Unknown error'}`);
+			}
+		} catch (error) {
+			console.error('❌ Error processing login result:', error);
+			alert('Error processing login. Please try again.');
+		}
+	};
 
 	const handleTwitterLogin = async () => {
 		try {
@@ -32,8 +93,8 @@ function LoginPage() {
 			
 			// Popup primero (mejor UX). Si falla, fallback a redirect
 			const result = await signInWithPopup(auth, twitterProvider);
-			console.log('✅ Popup login successful');
-			// No need to do anything else, Firebase auth state will handle the rest
+			console.log('✅ Popup login successful, processing result...');
+			await handleResult(result);
 		} catch (err) {
 			console.error('❌ Popup login failed, falling back to redirect:', err?.code, err?.message);
 			try {

@@ -3,60 +3,17 @@ import MissionList from './MissionList';
 import WalletSection from './WalletSection';
 import favicon from '../images/favicon.png';
 
-// Static missions data - no backend needed
-const STATIC_MISSIONS = [
-  {
-    id: 1,
-    title: "Follow @PenguinFishingClub",
-    description: "Follow our official Twitter account to stay updated with the latest news and announcements.",
-    points: 50,
-    completed: false,
-    type: "follow"
-  },
-  {
-    id: 2,
-    title: "Retweet Announcement",
-    description: "Retweet our latest announcement about the whitelist opening.",
-    points: 75,
-    completed: false,
-    type: "retweet"
-  },
-  {
-    id: 3,
-    title: "Like 3 Posts",
-    description: "Like at least 3 of our recent posts to show your support.",
-    points: 25,
-    completed: false,
-    type: "like"
-  },
-  {
-    id: 4,
-    title: "Share Your Excitement",
-    description: "Tweet about how excited you are for the Penguin Fishing Club mint.",
-    points: 100,
-    completed: false,
-    type: "tweet"
-  },
-  {
-    id: 5,
-    title: "Join Discord",
-    description: "Join our Discord community and introduce yourself.",
-    points: 50,
-    completed: false,
-    type: "discord"
-  }
-];
-
 function Dashboard({ user, onLogout }) {
-  const [missions, setMissions] = useState(STATIC_MISSIONS);
+  const [missions, setMissions] = useState([]);
   const [stats, setStats] = useState({
     totalPoints: 0,
     completedMissions: 0,
-    totalMissions: STATIC_MISSIONS.length,
-    pendingMissions: STATIC_MISSIONS.length
+    totalMissions: 0,
+    pendingMissions: 0
   });
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [loadingMissionId, setLoadingMissionId] = useState(null);
+  const [backendStatus, setBackendStatus] = useState('checking');
 
   // Debug log para ver qué usuario llega
   useEffect(() => {
@@ -65,33 +22,61 @@ function Dashboard({ user, onLogout }) {
     console.log('🔍 User displayName:', user?.displayName);
     console.log('🔍 User username:', user?.username);
     
-    // Load user progress from localStorage
-    loadUserProgress();
+    // Fetch missions from API
+    fetchMissions();
   }, [user]);
 
-  const loadUserProgress = () => {
+  const fetchMissions = async () => {
     try {
-      const savedProgress = localStorage.getItem(`user_progress_${user?.uid}`);
-      if (savedProgress) {
-        const progress = JSON.parse(savedProgress);
-        setMissions(progress.missions);
-        setStats(progress.stats);
+      setLoading(true);
+      console.log('🔍 Starting to fetch missions...');
+      
+      const token = localStorage.getItem('jwt_token');
+      console.log('🔍 Token found:', token ? 'YES' : 'NO');
+      
+      if (!token) {
+        console.log('❌ No JWT token found, using fallback');
+        setBackendStatus('offline');
+        setLoading(false);
+        return;
+      }
+      
+      const response = await fetch('/api/missions', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      console.log('🔍 Response status:', response.status);
+      
+      if (response.ok) {
+        const data = await response.json();
+        const missionsData = data.missions || [];
+        console.log('✅ Missions loaded from API:', missionsData.length);
+        
+        setMissions(missionsData);
+        
+        // Calculate statistics
+        const completed = missionsData.filter(m => m.completed).length;
+        const totalPoints = missionsData.filter(m => m.completed).reduce((sum, m) => sum + m.points, 0);
+        
+        setStats({
+          totalPoints,
+          completedMissions: completed,
+          totalMissions: missionsData.length,
+          pendingMissions: missionsData.length - completed
+        });
+        
+        setBackendStatus('online');
+      } else {
+        console.error('❌ API failed:', response.status);
+        setBackendStatus('offline');
       }
     } catch (error) {
-      console.log('No saved progress found, using default missions');
-    }
-  };
-
-  const saveUserProgress = (newMissions, newStats) => {
-    try {
-      const progress = {
-        missions: newMissions,
-        stats: newStats,
-        lastUpdated: Date.now()
-      };
-      localStorage.setItem(`user_progress_${user?.uid}`, JSON.stringify(progress));
-    } catch (error) {
-      console.error('Error saving progress:', error);
+      console.error('💥 Error fetching missions:', error);
+      setBackendStatus('offline');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -101,44 +86,60 @@ function Dashboard({ user, onLogout }) {
     setLoadingMissionId(missionId);
     
     try {
-      // Simulate delay for mission verification
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      const token = localStorage.getItem('jwt_token');
+      if (!token) {
+        alert('No authentication token found. Please login again.');
+        return;
+      }
       
-      // Find and complete the mission
-      const mission = missions.find(m => m.id === missionId);
-      if (mission && !mission.completed) {
-        // Mark mission as completed
-        const newMissions = missions.map(m => 
-          m.id === missionId ? { ...m, completed: true } : m
+      const response = await fetch('/api/missions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ missionId })
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        console.log('✅ Mission completed:', data);
+        
+        // Update missions state
+        setMissions(prev => 
+          prev.map(m => m.id === missionId ? { ...m, completed: true } : m)
         );
         
         // Update statistics
-        const pointsToAdd = mission.points;
-        const newStats = {
-          totalPoints: stats.totalPoints + pointsToAdd,
-          completedMissions: stats.completedMissions + 1,
-          totalMissions: stats.totalMissions,
-          pendingMissions: Math.max(stats.pendingMissions - 1, 0)
-        };
-        
-        // Update state
-        setMissions(newMissions);
-        setStats(newStats);
-        
-        // Save to localStorage
-        saveUserProgress(newMissions, newStats);
+        const pointsToAdd = data.mission.points;
+        setStats(prev => ({
+          ...prev,
+          totalPoints: prev.totalPoints + pointsToAdd,
+          completedMissions: prev.completedMissions + 1,
+          pendingMissions: Math.max(prev.pendingMissions - 1, 0)
+        }));
         
         alert(`Mission completed! You earned ${pointsToAdd} points.`);
       } else {
-        alert('Mission already completed or not found.');
+        const errorData = await response.json();
+        alert(`Error: ${errorData.error || 'Failed to complete mission'}`);
       }
     } catch (error) {
       console.error('Error completing mission:', error);
-      alert('Error completing mission. Try again.');
+      alert('Connection error. Try again.');
     } finally {
       setLoadingMissionId(null);
     }
   };
+
+  if (loading) {
+    return (
+      <div className="loading-screen">
+        <div className="loading-spinner"></div>
+        <p>Loading missions...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="dashboard-container">
@@ -148,18 +149,22 @@ function Dashboard({ user, onLogout }) {
             <img src={favicon} alt="Logo" style={{ width: '150px', height: '150px' }} />
           </div>
           
-          {/* Offline Mode Indicator */}
+          {/* Backend Status Indicator */}
           <div style={{ 
-            background: 'rgba(76, 175, 80, 0.1)', 
-            border: '1px solid #4caf50', 
+            background: backendStatus === 'online' ? 'rgba(76, 175, 80, 0.1)' : 'rgba(255, 152, 0, 0.1)', 
+            border: `1px solid ${backendStatus === 'online' ? '#4caf50' : '#ff9800'}`, 
             borderRadius: '8px', 
             padding: '10px', 
             margin: '20px', 
             textAlign: 'center',
-            color: '#2e7d32'
+            color: backendStatus === 'online' ? '#2e7d32' : '#e65100'
           }}>
-            <i className="fas fa-wifi"></i>
-            <strong> Online Mode:</strong> Using local storage for missions and progress.
+            <i className={`fas fa-${backendStatus === 'online' ? 'wifi' : 'exclamation-triangle'}`}></i>
+            <strong> {backendStatus === 'online' ? 'Online Mode:' : 'Offline Mode:'}</strong> 
+            {backendStatus === 'online' 
+              ? ' Connected to Firebase database' 
+              : ' Using cached data - check environment variables'
+            }
           </div>
           
           <div className="user-section">
@@ -234,11 +239,19 @@ function Dashboard({ user, onLogout }) {
               <div className="section-separator"></div>
             </div>
             
-            <MissionList 
-              missions={missions} 
-              onMissionComplete={handleMissionComplete}
-              loadingMissionId={loadingMissionId}
-            />
+            {missions.length > 0 ? (
+              <MissionList 
+                missions={missions} 
+                onMissionComplete={handleMissionComplete}
+                loadingMissionId={loadingMissionId}
+              />
+            ) : (
+              <div style={{ textAlign: 'center', padding: '40px', color: '#666' }}>
+                <i className="fas fa-exclamation-triangle" style={{ fontSize: '48px', marginBottom: '20px' }}></i>
+                <h3>No missions available</h3>
+                <p>Check your environment variables or try refreshing the page.</p>
+              </div>
+            )}
           </div>
         </div>
         <div className="bottom-left"></div>

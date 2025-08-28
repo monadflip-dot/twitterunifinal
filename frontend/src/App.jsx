@@ -11,39 +11,67 @@ function App() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Listen to Firebase auth state changes
-    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
-      if (firebaseUser) {
-        // User is signed in
-        const userData = {
-          uid: firebaseUser.uid,
-          displayName: firebaseUser.displayName || 'User',
-          photo: firebaseUser.photoURL,
-          username: firebaseUser.displayName || 'user',
-          email: firebaseUser.email
-        };
-        setUser(userData);
-        setIsAuthenticated(true);
-      } else {
-        // User is signed out
-        setUser(null);
-        setIsAuthenticated(false);
-      }
-      setLoading(false);
-    });
-
-    // Cleanup subscription
-    return () => unsubscribe();
+    // Check authentication status
+    checkAuthStatus();
   }, []);
+
+  const checkAuthStatus = async () => {
+    try {
+      const token = localStorage.getItem('jwt_token');
+      if (!token) {
+        setIsAuthenticated(false);
+        setUser(null);
+        setLoading(false);
+        return;
+      }
+      
+      console.log('🔍 Checking JWT token...');
+      
+      // Verify JWT token with our API
+      const response = await fetch('/api/user', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        console.log('✅ JWT token valid, user authenticated:', data.user.username);
+        setUser(data.user);
+        setIsAuthenticated(true);
+      } else if (response.status === 401) {
+        console.log('❌ JWT token invalid, clearing token');
+        localStorage.removeItem('jwt_token');
+        setIsAuthenticated(false);
+        setUser(null);
+      } else {
+        console.error('❌ API error:', response.status);
+        setIsAuthenticated(false);
+        setUser(null);
+      }
+    } catch (error) {
+      console.error('❌ Error checking auth status:', error);
+      setIsAuthenticated(false);
+      setUser(null);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleLogout = async () => {
     try {
+      // Clear JWT token
+      localStorage.removeItem('jwt_token');
+      
+      // Sign out from Firebase
       await signOut(auth);
+      
       setIsAuthenticated(false);
       setUser(null);
     } catch (error) {
       console.error('Error logging out:', error);
       // Even if logout fails, clear local state
+      localStorage.removeItem('jwt_token');
       setIsAuthenticated(false);
       setUser(null);
     }
