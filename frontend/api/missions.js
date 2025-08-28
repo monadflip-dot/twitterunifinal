@@ -99,6 +99,33 @@ const missions = [
     tweetId: '1959220121584513532', 
     points: 100,
     completed: false
+  },
+  {
+    id: 8,
+    type: 'like',
+    title: 'Like the new ABSPFC announcement tweet',
+    description: 'Like the new ABSPFC announcement tweet to show your support',
+    tweetId: '1960781197052928030',
+    points: 60,
+    completed: false
+  },
+  {
+    id: 9,
+    type: 'retweet',
+    title: 'Retweet the new ABSPFC announcement',
+    description: 'Retweet the new ABSPFC announcement to spread the word',
+    tweetId: '1960781197052928030',
+    points: 80,
+    completed: false
+  },
+  {
+    id: 10,
+    type: 'comment',
+    title: 'Comment on the new ABSPFC announcement',
+    description: 'Leave a comment on the new ABSPFC announcement tweet',
+    tweetId: '1960781197052928030',
+    points: 120,
+    completed: false
   }
 ];
 

@@ -88,8 +88,8 @@ export default async function handler(req, res) {
         stats: {
           totalPoints: progress.totalPoints || 0,
           completedMissions: progress.completedMissions?.length || 0,
-          totalMissions: 7, // Total missions available
-          pendingMissions: 7 - (progress.completedMissions?.length || 0)
+          totalMissions: 10, // Total missions available (updated from 7 to 10)
+          pendingMissions: 10 - (progress.completedMissions?.length || 0)
         }
       };
       
@@ -105,8 +105,8 @@ export default async function handler(req, res) {
           stats: {
             totalPoints: 0,
             completedMissions: 0,
-            totalMissions: 7,
-            pendingMissions: 7
+            totalMissions: 10, // Updated from 7 to 10
+            pendingMissions: 10 // Updated from 7 to 10
           },
           warning: 'Using cached data due to Firebase connection issue'
         }
