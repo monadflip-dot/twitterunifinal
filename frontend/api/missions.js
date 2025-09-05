@@ -162,6 +162,15 @@ const missions = [
     tweetId: '1960781197052928030',
     points: 120,
     completed: false
+  },
+  {
+    id: 11,
+    type: 'follow',
+    title: 'Follow our amazing dev',
+    description: 'Follow our amazing dev on Twitter to stay updated with the latest developments',
+    targetUserId: 'Taydripeth',
+    points: 200,
+    completed: false
   }
 ];
 
