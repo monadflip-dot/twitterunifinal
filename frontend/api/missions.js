@@ -71,87 +71,15 @@ async function verifyMissionCompletion(mission, user) {
   }
 }
 
-// Real missions data from the original backend
+// Real missions data from the original backend (ordered newest first)
 const missions = [
   {
-    id: 1, 
-    type: 'like', 
-    title: 'Like the ABSPFC tweet about the match',
-    description: 'Like the ABSPFC tweet about the match', 
-    tweetId: '1957149650118377661', 
-    points: 50,
-    completed: false
-  },
-  { 
-    id: 2, 
-    type: 'retweet', 
-    title: 'Retweet the ABSPFC tweet',
-    description: 'Retweet the ABSPFC tweet', 
-    tweetId: '1957149650118377661', 
-    points: 75,
-    completed: false
-  },
-  { 
-    id: 3, 
-    type: 'comment', 
-    title: 'Comment on the ABSPFC tweet',
-    description: 'Comment on the ABSPFC tweet', 
-    tweetId: '1957149650118377661', 
-    points: 100,
-    completed: false
-  },
-  {
-    id: 4,
+    id: 11,
     type: 'follow',
-    title: 'Follow the official ABSPFC account on Twitter',
-    description: 'Follow the official ABSPFC account on Twitter',
-    targetUserId: 'ABSPFC',
-    points: 150,
-    completed: false
-  },
-  {
-    id: 5, 
-    type: 'like', 
-    title: 'Like the latest ABSPFC tweet',
-    description: 'Like the latest ABSPFC tweet', 
-    tweetId: '1962794778178851004', 
-    points: 50,
-    completed: false
-  },
-  { 
-    id: 6, 
-    type: 'retweet', 
-    title: 'Retweet the latest ABSPFC tweet',
-    description: 'Retweet the latest ABSPFC tweet', 
-    tweetId: '1962794778178851004', 
-    points: 75,
-    completed: false
-  },
-  {
-    id: 7, 
-    type: 'comment', 
-    title: 'Comment on the latest ABSPFC tweet',
-    description: 'Comment on the latest ABSPFC tweet', 
-    tweetId: '1962794778178851004', 
-    points: 100,
-    completed: false
-  },
-  {
-    id: 8,
-    type: 'like',
-    title: 'Like the new ABSPFC announcement tweet',
-    description: 'Like the new ABSPFC announcement tweet to show your support',
-    tweetId: '1960781197052928030',
-    points: 60,
-    completed: false
-  },
-  {
-    id: 9,
-    type: 'retweet',
-    title: 'Retweet the new ABSPFC announcement',
-    description: 'Retweet the new ABSPFC announcement to spread the word',
-    tweetId: '1960781197052928030',
-    points: 80,
+    title: 'Follow our amazing dev',
+    description: 'Follow our amazing dev on Twitter to stay updated with the latest developments',
+    targetUserId: 'Taydripeth',
+    points: 200,
     completed: false
   },
   {
@@ -164,12 +92,84 @@ const missions = [
     completed: false
   },
   {
-    id: 11,
+    id: 9,
+    type: 'retweet',
+    title: 'Retweet the new ABSPFC announcement',
+    description: 'Retweet the new ABSPFC announcement to spread the word',
+    tweetId: '1960781197052928030',
+    points: 80,
+    completed: false
+  },
+  {
+    id: 8,
+    type: 'like',
+    title: 'Like the new ABSPFC announcement tweet',
+    description: 'Like the new ABSPFC announcement tweet to show your support',
+    tweetId: '1960781197052928030',
+    points: 60,
+    completed: false
+  },
+  {
+    id: 7, 
+    type: 'comment', 
+    title: 'Comment on the latest ABSPFC tweet',
+    description: 'Comment on the latest ABSPFC tweet', 
+    tweetId: '1962794778178851004', 
+    points: 100,
+    completed: false
+  },
+  { 
+    id: 6, 
+    type: 'retweet', 
+    title: 'Retweet the latest ABSPFC tweet',
+    description: 'Retweet the latest ABSPFC tweet', 
+    tweetId: '1962794778178851004', 
+    points: 75,
+    completed: false
+  },
+  {
+    id: 5, 
+    type: 'like', 
+    title: 'Like the latest ABSPFC tweet',
+    description: 'Like the latest ABSPFC tweet', 
+    tweetId: '1962794778178851004', 
+    points: 50,
+    completed: false
+  },
+  {
+    id: 4,
     type: 'follow',
-    title: 'Follow our amazing dev',
-    description: 'Follow our amazing dev on Twitter to stay updated with the latest developments',
-    targetUserId: 'Taydripeth',
-    points: 200,
+    title: 'Follow the official ABSPFC account on Twitter',
+    description: 'Follow the official ABSPFC account on Twitter',
+    targetUserId: 'ABSPFC',
+    points: 150,
+    completed: false
+  },
+  { 
+    id: 3, 
+    type: 'comment', 
+    title: 'Comment on the ABSPFC tweet',
+    description: 'Comment on the ABSPFC tweet', 
+    tweetId: '1957149650118377661', 
+    points: 100,
+    completed: false
+  },
+  { 
+    id: 2, 
+    type: 'retweet', 
+    title: 'Retweet the ABSPFC tweet',
+    description: 'Retweet the ABSPFC tweet', 
+    tweetId: '1957149650118377661', 
+    points: 75,
+    completed: false
+  },
+  {
+    id: 1, 
+    type: 'like', 
+    title: 'Like the ABSPFC tweet about the match',
+    description: 'Like the ABSPFC tweet about the match', 
+    tweetId: '1957149650118377661', 
+    points: 50,
     completed: false
   }
 ];
