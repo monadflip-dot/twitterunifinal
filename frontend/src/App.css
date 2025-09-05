@@ -780,6 +780,46 @@ body, html {
 .mission-button.loading {
   background: #4a90e2;
   color: white;
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+    box-shadow: 0 4px 15px rgba(74, 144, 226, 0.3);
+  }
+  50% {
+    transform: scale(1.05);
+    box-shadow: 0 6px 20px rgba(74, 144, 226, 0.5);
+  }
+  100% {
+    transform: scale(1);
+    box-shadow: 0 4px 15px rgba(74, 144, 226, 0.3);
+  }
+}
+
+/* Mission verification progress indicator */
+.mission-verification-progress {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 10px;
+  background: rgba(74, 144, 226, 0.1);
+  border-radius: 8px;
+  margin: 10px 0;
+  border: 1px solid rgba(74, 144, 226, 0.3);
+}
+
+.mission-verification-progress .fa-spinner {
+  animation: spin 1s linear infinite;
+  color: #4a90e2;
+}
+
+.mission-verification-progress span {
+  color: #4a90e2;
+  font-weight: 600;
+  font-size: 14px;
 }
 
 /* No Missions */

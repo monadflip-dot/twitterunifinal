@@ -87,21 +87,55 @@ function LoginPage() {
 				Object.keys(window.localStorage || {}).forEach((k) => {
 					if (k.startsWith('firebase:')) localStorage.removeItem(k);
 				});
+				console.log('🧹 Firebase localStorage cleaned');
 			} catch {}
 			
 			console.log('🚀 Starting Twitter login...');
+			console.log('🔍 Current Firebase auth state:', auth.currentUser ? 'User logged in' : 'No user');
 			
 			// Popup primero (mejor UX). Si falla, fallback a redirect
 			const result = await signInWithPopup(auth, twitterProvider);
 			console.log('✅ Popup login successful, processing result...');
+			console.log('👤 User data from popup:', result.user?.displayName, result.user?.uid);
 			await handleResult(result);
 		} catch (err) {
-			console.error('❌ Popup login failed, falling back to redirect:', err?.code, err?.message);
+			console.error('❌ Popup login failed:', err?.code, err?.message);
+			console.error('🔍 Full error object:', err);
+			
+			// Detectar errores específicos de OAuth
+			if (err?.code === 'auth/popup-closed-by-user') {
+				alert('Login popup was closed. Please try again.');
+				return;
+			}
+			
+			if (err?.code === 'auth/account-exists-with-different-credential') {
+				alert('This account is already linked to another login method. Please use the original method.');
+				return;
+			}
+			
+			if (err?.code === 'auth/operation-not-allowed') {
+				alert('Twitter login is not enabled. Please contact support.');
+				return;
+			}
+			
+			console.log('🔄 Falling back to redirect login...');
 			try {
 				await signInWithRedirect(auth, twitterProvider);
+				console.log('✅ Redirect login initiated');
 			} catch (e) {
-				console.error('❌ Redirect login also failed:', e);
-				alert('Twitter login failed. Please try again.');
+				console.error('❌ Redirect login also failed:', e?.code, e?.message);
+				console.error('🔍 Full redirect error:', e);
+				
+				// Mensaje más específico para el usuario
+				if (e?.code === 'auth/network-request-failed') {
+					alert('Network error. Please check your internet connection and try again.');
+				} else if (e?.code === 'auth/too-many-requests') {
+					alert('Too many login attempts. Please wait a few minutes and try again.');
+				} else if (e?.code === 'auth/popup-blocked') {
+					alert('Popup was blocked. Please allow popups for this site and try again.');
+				} else {
+					alert(`Twitter login failed: ${e?.message || 'Unknown error'}. Please try again or contact support.`);
+				}
 			}
 		}
 	};

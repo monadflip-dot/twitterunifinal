@@ -81,6 +81,10 @@ function Dashboard({ user, onLogout }) {
     setLoadingMissionId(missionId);
     
     try {
+      // Add 5 second delay with loading animation
+      console.log(`⏳ Starting 5-second verification process for mission ${missionId}...`);
+      await new Promise(resolve => setTimeout(resolve, 5000));
+      
       const token = localStorage.getItem('jwt_token');
       if (!token) {
         alert('No authentication token found. Please login again.');
@@ -114,7 +118,11 @@ function Dashboard({ user, onLogout }) {
           pendingMissions: Math.max(prev.pendingMissions - 1, 0)
         }));
         
-        alert(`Mission completed! You earned ${pointsToAdd} points.`);
+        // Show success message with verification status
+        const message = data.fallback ? 
+          `Mission completed! You earned ${pointsToAdd} points. (Auto-verified)` :
+          `Mission completed! You earned ${pointsToAdd} points.`;
+        alert(message);
       } else {
         const errorData = await response.json();
         alert(`Error: ${errorData.error || 'Failed to complete mission'}`);
