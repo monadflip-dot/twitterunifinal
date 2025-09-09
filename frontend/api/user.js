@@ -88,8 +88,8 @@ export default async function handler(req, res) {
         stats: {
           totalPoints: progress.totalPoints || 0,
           completedMissions: progress.completedMissions?.length || 0,
-          totalMissions: 14, // Total missions available (updated to 14)
-          pendingMissions: 14 - (progress.completedMissions?.length || 0)
+          totalMissions: 17, // Total missions available (updated to 17)
+          pendingMissions: 17 - (progress.completedMissions?.length || 0)
         }
       };
       

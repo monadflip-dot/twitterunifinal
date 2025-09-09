@@ -74,6 +74,33 @@ async function verifyMissionCompletion(mission, user) {
 // Real missions data from the original backend (ordered newest first)
 const missions = [
   {
+    id: 17,
+    type: 'like',
+    title: 'Like the newest ABSPFC tweet',
+    description: 'Like the newest ABSPFC tweet to show your support',
+    tweetId: '1965409672061714895',
+    points: 60,
+    completed: false
+  },
+  {
+    id: 16,
+    type: 'retweet',
+    title: 'Retweet the newest ABSPFC tweet',
+    description: 'Retweet the newest ABSPFC tweet to spread the word',
+    tweetId: '1965409672061714895',
+    points: 80,
+    completed: false
+  },
+  {
+    id: 15,
+    type: 'comment',
+    title: 'Comment on the newest ABSPFC tweet',
+    description: 'Leave a comment on the newest ABSPFC tweet',
+    tweetId: '1965409672061714895',
+    points: 120,
+    completed: false
+  },
+  {
     id: 14,
     type: 'like',
     title: 'Like the latest ABSPFC tweet',
